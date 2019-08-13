@@ -156,6 +156,7 @@
              (draw-all-nodes-aux (cdr list) dc)
          )
   )
+  
 )
 
 
@@ -172,103 +173,19 @@
           (send dc set-pen two-way-pen)
          )
     )
-  (send dc draw-line
-        (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y")) (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
-        ; + 10 ya que el nodo tiene radio de 20 -> asi la linea queda en el medio
-  )
+
+  (send dc draw-line (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y")) (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
+ )
 
 
 ;Funcion para dibujar todas las lineas (inicio de aplicacion)
-(define (draw-all-lines)
-  (draw-all-lines-aux graph)
-  )
-
-;Funcion auxiliar para dibujar todas las lineas (inicio de aplicacion)
-;Parametros:
-;   graph: graph
-(define (draw-all-lines-aux graph)
-  (cond ( (null? (cdr graph) )
-          (draw-lines-by-node dc (caar graph) (cadar graph))
-         )
-        (else         
-         (draw-lines-by-node dc (caar graph) (cadar graph))
-         (draw-all-lines-aux (cdr graph) ) ;Elimina el primer nodo del grafo
-         )
-    )
-  )
-
-
-;Funcion para dibujar lineas de un nodo especifico
-;Parametros:
-;   dc: Drawing Context
-;   node: nodo inicial
-;   connections: lista de nodos que finalizan la linea
-(define (draw-lines-by-node dc node connections)
-  (cond ( (null? (cdr connections) )
-          (draw-line dc node (caar connections) (check-ways (caar connections) node) )
-         )
-        (else
-         (draw-line dc node (caar connections) (check-ways (caar connections) node) )
-         (draw-lines-by-node dc node (cdr connections) )
-         )
-    )
-  )
-
-;Funcion para verificar si el camino es one-way o two-way
-;Parametros:
-;   node: nodo por verificar
-;   fin: nodo por encontrar camino
-(define (check-ways node fin)
-  2
-  (check-ways-aux node fin graph)
-  )
-
-;Funcion auxiliar para verificar si el camino es one-way o two-way
-;   node: nodo por verificar
-;   fin: nodo por encontrar camino
-;   graph: graph
-(define (check-ways-aux node fin graph)
-  (cond ( (null? graph)
-          1
-         )
-        ( (equal? node (caar graph))
-          (cond ( (path? fin (cadar graph) )
-                  2
-                 )
-                (else
-                 (check-ways-aux node fin (cdr graph) )
-                 )
-                )
-         )
-        (else
-         (check-ways-aux node fin (cdr graph) )
-         )
-  )
-  )
-
-;Funcion para verificar si existe un path a la inversa del ya encontrado
-;Parametros:
-;   fin: nodo final que pasa a ser inicial
-;   connections: lista de nodos que finalizarian la linea
-(define (path? fin connections)
-  (cond ( (null? connections)
-          #f
-         )
-        ( (equal? fin (caar connections) )
-          #t
-          )
-        (else
-         (path? fin (cdr connections) )
-         )
-    )
- )
 
 
 ;Funcion para dibujar una ruta
 
 
 ;Funcion para dibujar todas las rutas
-;o dibujar la ruta seleccionada
+;O dibujar la ruta seleccionada
 
 
 
@@ -352,6 +269,13 @@
 ; Wait a second to let the window get ready
 (sleep/yield 1)
 
-;Initial draw
-(draw-all-lines)
-(draw-all-nodes)
+;Test Draw Circle
+;(draw-node dc 71 784 477 )
+
+;Test Draw Line
+(draw-line dc 72 62 1)
+(draw-line dc 62 14 1)
+(draw-line dc 72 14 2)
+
+;Draw all circles
+(draw-all-nodes-aux nodes-list dc)
