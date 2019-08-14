@@ -1,19 +1,28 @@
 #lang racket
 (require racket/gui)
+ (require racket/draw/arrow)
 
 
 ;; Variables
 
 
+;Destino inicial de la ruta
+(define destino-inicial "")
+
+
+;Destino final de la ruta
+(define destino-final "")
+
+
 ;Lista de Nodos con coordenadas
 (define nodes-list '(
-        (11 442 299) (12 343 329) (13 540 359) (14 638 388)
-        (21 393 239) (22 442 149) (23 245 60)
+        (11 442 299) (12 343 329) (13 540 349) (14 638 398)
+        (21 393 239) (22 432 139) (23 265 60)
         (31 589 299) (32 687 269)
-        (41 491 179) (42 540 120)
+        (41 501 189) (42 540 120)
         (51 98 209) (52 147 90)
         (61 294 209) (62 736 448)
-        (71 638 179) (72 736 359)
+        (71 668 179) (72 736 359)
      )
   )
 
@@ -39,6 +48,9 @@
                 )
   )
 
+;Variable de estado de seleccion de rutas
+(define path-selection -1)
+
 
 ;Pens
 (define no-pen (make-object pen% "BLACK" 1 'transparent))
@@ -63,7 +75,7 @@
 ;;Funciones
 
 
-;Funcion para encontrar la coordenada deseada del nodo
+;Funcion para encontrar la coordenada deseada de un nodo
 ;Parametros:
 ;   nodo: numero de ciudad
 ;   pos: coordenada ("x" o "y")
@@ -71,7 +83,7 @@
   (get-coord-aux nodo pos nodes-list)
     )
 
-;Funcion auxiliar para encontrar la coordenada deseada del nodo
+;Funcion auxiliar para encontrar la coordenada deseada de un nodo
 ;Parametros:
 ;   nodo: numero de ciudad
 ;   pos: coordenada ("x" o "y")
@@ -166,14 +178,21 @@
 ;   way: cantidad de vias (1 o 2)
 (define (draw-line dc ini fin way)
   (cond ( (equal? way 1)
+          ;Cambia al pen para una via
           (send dc set-pen one-way-pen)
+          ;Dibuja solo las flechas de los caminos de una sola via
+          (draw-arrows (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y"))
+              (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
          )
         ( (equal? way 2)
+          ;Cambia al pen para dos vias
           (send dc set-pen two-way-pen)
          )
     )
+  ;Manda a dibujar la linea
   (send dc draw-line
-        (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y")) (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
+        (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y"))
+        (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
         ; + 10 ya que el nodo tiene radio de 20 -> asi la linea queda en el medio
   )
 
@@ -219,7 +238,6 @@
 ;   node: nodo por verificar
 ;   fin: nodo por encontrar camino
 (define (check-ways node fin)
-  2
   (check-ways-aux node fin graph)
   )
 
@@ -264,6 +282,25 @@
  )
 
 
+;Funcion para dibujar una flecha cerca de la linea
+;Parametros:
+;
+;
+;
+;
+(define (draw-arrows x1 y1 x2 y2)
+  (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2) (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+              (/ (+ (/ (+ x1 x2) 2) x2) 2) (/ (+ (/ (+ y1 y2) 2) y2) 2) 10 10)
+  )
+
+
+;Funcion para mostrar el peso de la linea cerca de esta
+(define (draw-weight)
+  #t
+  )
+  
+
+
 ;Funcion para dibujar una ruta
 
 
@@ -272,20 +309,86 @@
 
 
 
+;Funcion para verificar la escogencia de los radio buttons
+(define (check-rbuttons)
+          (send instructions-text-field set-value (number->string path-selection) )
+  )
+
 
 
 ;;Widgets
 
 
+
+;;;Pantalla Inicial
+
+
+;Frame inicial
+(define initial-frame (new frame% [label "WazeTico"]
+                   [width 400]
+                   [height 200]
+                   [alignment '(center center)]))
+
+
+;Panel vertical
+;Incluye title y hpanel-initial
+(define vpanel-initial (new vertical-panel% [parent initial-frame]
+                            [alignment '(center center)]))
+
+
+; Make a static text message in the frame
+(define title (new message% [parent vpanel-initial]
+                          [label "WazeTico"]))
+
+
+;Panel horizontal
+(define hpanel-initial (new horizontal-panel% [parent vpanel-initial]
+                            [alignment '(center center)]))
+
+
+;Boton Undo
+(define initial-initialize-buton (new button% [parent hpanel-initial]
+             [label "Initialize"]
+             [vert-margin 10]	 
+             [horiz-margin 5]
+             [callback (lambda (button event)
+                         ;Cierra la ventana inicial
+                         (send initial-frame show #f)
+                         ;Abre la ventana principal
+                         (send main-frame show #t)
+                         ; Wait a second to let the window get ready
+                         (sleep/yield 1)
+                         ;Initial draws
+                         (draw-all-lines)
+                         (draw-all-nodes)
+                         )]))
+
+
+;Boton Help!
+(define initial-help-buton (new button% [parent hpanel-initial]
+             [label "Help!"]
+             [vert-margin 10]	 
+             [horiz-margin 5]
+             ;[callback (lambda (button event))]
+
+                         ))
+                  
+
+
+
+;;;Pantalla Principal
+
+
 ; Frame principal
 (define main-frame (new frame% [label "WazeTico"]
                    [width 1100]
-                    [height 660]
-                    [alignment '(left top)] ))
+                   [height 660]
+                   [alignment '(left top)]))
 
 
 ;Panel principal (horizontal)
-(define main-panel (new horizontal-panel% [parent main-frame]))
+(define main-panel (new horizontal-panel% [parent main-frame]
+                        ))
 
 
 ;Panel vertical
@@ -307,31 +410,80 @@
 
 
 ;Panel horizontal secundario
-;Incluye text-field (instrucciones), boton "Search" y boton "Back"
-(define hpanel2 (new horizontal-panel% [parent vpanel]))
+;Incluye text-field (instrucciones) y vpanel2 (botones)
+(define hpanel2 (new horizontal-panel% [parent vpanel]
+                     [alignment '(center center)]))
 
 
 ;Text-field de instrucciones
 (define instructions-text-field ( new text-field% [parent hpanel2]
                                     [label #f]
+                                    [init-value "Bienvenidos a WazeTico!
+Favor seleccione un nodo como Destino Inicial."]
                                     [vert-margin 10]	 
                                     [horiz-margin 10]
                                     [min-width 600]
                                     [min-height 120]))
 
 
+;Panel vertical secundario
+;Incluye hpanel3(undo y vpanel3) y boton (new path)
+(define vpanel2 (new vertical-panel% [parent hpanel2]
+                     [alignment '(center center)]))
+
+
+;Panel vertical terciario
+;Incluye radio buttons (Paths) y boton (Search)
+(define vpanel3 (new vertical-panel% [parent vpanel2]
+                     [alignment '(center center)]
+                     [vert-margin 5]	 
+                     [horiz-margin 5]))
+
+
+;Radio Button Selection
+(define rbuttons (new radio-box% [label ""]
+     [choices '("Shortest Path" "All Paths")]
+     [parent vpanel3]
+    ; [callback (lambda (control-event))
+                 ;(set path-selection (send rbuttons get-selection)) )
+                   ; ]
+))
+     
+
 ;Boton Search
-(new button% [parent hpanel2]
-             [label "Search"])
-            ; [callback (lambda (button event)
-                 ;        (send msg set-label "Left click"))])
+(new button% [parent vpanel3]
+             [label "Begin Search"]
+             [callback (lambda (button event)
+                         
+                         (set! path-selection (send rbuttons get-selection) )
+                         (check-rbuttons)
+                       ;(send instructions-text-field set-value "Begin Search Button")
+                         )])
 
 
-;Boton Back
-(new button% [parent hpanel2]
-             [label "Back"])
-           ;  [callback (lambda (button event)
-                ;         (send msg set-label "Right click"))])
+;Panel horizontal terciario
+;Incluye boton (Undo) y vpanel3 (radio buttons y boton (Search))
+(define hpanel3 (new horizontal-panel% [parent vpanel2]
+                     [alignment '(center center)]))
+
+
+;Boton Undo
+(new button% [parent hpanel3]
+             [label "Undo"]
+             [vert-margin 10]	 
+             [horiz-margin 5]
+             [callback (lambda (button event)
+                       (send instructions-text-field set-value "Undo Button"))])
+
+
+;Boton New Path
+(new button% [parent hpanel3]
+             [label "New Path"]
+             [vert-margin 10]	 
+             [horiz-margin 5]
+             [callback (lambda (button event)
+                       (send instructions-text-field set-value "New Path")
+                         (send main-frame show #f))])
 
 
 ;Text-field de informacion
@@ -346,12 +498,5 @@
 ;; Initial
 
 
-; Se muestra el frame principal
-(send main-frame show #t)
-
-; Wait a second to let the window get ready
-(sleep/yield 1)
-
-;Initial draw
-(draw-all-lines)
-(draw-all-nodes)
+; Se muestra el frame inicial
+(send initial-frame show #t)
