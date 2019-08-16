@@ -1,17 +1,18 @@
 #lang racket
 (require racket/gui)
- (require racket/draw/arrow)
+(require racket/draw/arrow)
+(require "grafoLogica.rkt")
 
 
 ;; Variables
 
 
 ;Destino inicial de la ruta
-(define destino-inicial "")
+(define initial-destiny "")
 
 
 ;Destino final de la ruta
-(define destino-final "")
+(define final-destiny "")
 
 
 ;Lista de Nodos con coordenadas
@@ -48,8 +49,21 @@
                 )
   )
 
+
+;Color list
+(define color-list '("LightCoral" "Red" "Orange" "Olive" "Yellow"
+                                 "Green" "Turquoise" "Blue" "Purple"
+                                 "LightCoral" "Olive" "Spring Green"
+                                 "DeepSkyBlue" "Light Steel Blue"
+                                 "Magenta" "Medium Sea Green" "Chocolate" )
+                                 )
+
+
 ;Variable de estado de seleccion de rutas
 (define path-selection -1)
+
+;Estado de seleccion de rutas
+(define search-state "")
 
 
 ;Pens
@@ -74,6 +88,8 @@
 
 ;;Funciones
 
+
+;;Funciones iniciales
 
 ;Funcion para encontrar la coordenada deseada de un nodo
 ;Parametros:
@@ -298,7 +314,121 @@
 (define (draw-weight)
   #t
   )
-  
+
+
+
+;;Funciones post-inicio
+
+
+;Funcion para iniciar la busqueda de los caminos
+(define (begin-search)
+  (cond ( (equal? #t (check-fields)) ;Si los campos de texto estan correctos
+          ;Se informa en el text-box sobre la busqueda
+          (search-info)
+          
+          ;Se inicia la busqueda de los caminos dependiendo del estado de seleccion del usuario
+          (search-by-state)
+         )
+    )
+ )
+
+
+
+
+;Funcion para verificar los fields antes de buscar las rutas
+(define (check-fields)
+  (cond ( (equal? #f (check-destiny-field initial-destiny nodes-list) )
+        ;Si el destino inicial no esta en los nodos
+          (send instructions-text-field set-value
+              "El destino inicial seleccionado no existe.\nIngrese un nuevo destino." )
+          #f
+        )
+        ( (equal? #f (check-destiny-field final-destiny nodes-list) )
+        ;Si el destino final no esta en los nodos
+          (send instructions-text-field set-value
+              "El destino final seleccionado no existe.\nIngrese un nuevo destino." )
+          #f
+        )
+        (else
+         #t
+         )
+  )
+)
+
+;Funcion para verificar las escogencias de los text-fields de los destinos
+;Parametros:
+;   text: string escrito en text-box
+;   list: nodes-list
+(define (check-destiny-field text list)
+  (cond ( (null? list)
+          #f
+         )
+        ( (equal? text ( number->string (caar list)) )
+          #t
+         )
+        (else
+         (check-destiny-field text (cdr list))
+         )
+    )
+  )
+
+
+;Funcion para cambiar el texto de instructions-text-field al presionar "Search"
+(define (search-info)
+(cond ( (equal? 0 path-selection)
+        (set! search-state "Camino más corto" )
+       )
+      ( (equal? 1 path-selection)
+        (set! search-state "Todos los caminos" )
+       )
+      )
+
+  (send instructions-text-field set-value (string-append
+                                           "Tipo de Busqueda: " search-state
+                                           "\n\nDestino Inicial: " initial-destiny
+                                           "\nDestino Final: " final-destiny
+                                           )
+        )
+  )
+
+
+;Funcion para empezar la busqueda de caminos dependiendo de la seleccion del usuario
+(define (search-by-state)
+  (cond ( (equal? 0 path-selection)
+          
+         )
+        ( (equal? 1 path-selection)
+          
+         )
+        (else
+         (send instructions-text-field set-value "Tipo de Busqueda no seleccionado."
+         )
+    )
+  )
+
+
+;Funcion para enviar a buscar las rutas
+(define (send-destinies)
+  (test-search-paths initial-destiny final-destiny graph (number->string path-selection))
+  )
+
+
+
+;Funcion test para buscar rutas
+(define (test-search-paths ini fin graph npaths)
+  (send instructions-text-field set-value (string-append
+                                           "Searching paths: " npaths ".\n"
+                                           ini " -> " fin) )
+
+(send instructions-text-field set-value (string-append (number->string (caaar (buscaCaminos (string->number ini) (string->number fin) grafo)) )
+                                                       (number->string (cadaar (buscaCaminos (string->number ini) (string->number fin) grafo)) )
+                                                       ) )
+  ;(string->number ini) (string->number fin)
+)
+
+
+
+
 
 
 ;Funcion para dibujar una ruta
@@ -309,10 +439,7 @@
 
 
 
-;Funcion para verificar la escogencia de los radio buttons
-(define (check-rbuttons)
-          (send instructions-text-field set-value (number->string path-selection) )
-  )
+
 
 
 
@@ -418,26 +545,64 @@
 ;Text-field de instrucciones
 (define instructions-text-field ( new text-field% [parent hpanel2]
                                     [label #f]
-                                    [init-value "Bienvenidos a WazeTico!
-Favor seleccione un nodo como Destino Inicial."]
+                                    [init-value
+                                     "Bienvenidos a WazeTico!\n
+Favor ingrese el destino inicial y el destino final.\n"]
                                     [vert-margin 10]	 
                                     [horiz-margin 10]
                                     [min-width 600]
                                     [min-height 120]))
 
+;Panel horizontal terciario
+;
+(define hpanel3 (new horizontal-panel% [parent hpanel2]
+                     [alignment '(center center)]
+                     ;[vert-margin 10]	 
+                     ;[horiz-margin 10]
+                     ))
+
 
 ;Panel vertical secundario
-;Incluye hpanel3(undo y vpanel3) y boton (new path)
+;
 (define vpanel2 (new vertical-panel% [parent hpanel2]
                      [alignment '(center center)]))
 
 
+;Text-field de instrucciones
+(define initial-text-field ( new text-field% [parent vpanel2]
+                                    [label #f]
+                                    ;[init-value ""]
+                                    ;[vert-margin 10]	 
+                                    ;[horiz-margin 10]
+                                    [min-width 10]
+                                    ;[min-height 20]
+                                    ))
+
+
+(define intial-label (new message% [parent vpanel2]
+                          [label "Initial"]))
+
+;Text-field de instrucciones
+(define final-text-field ( new text-field% [parent vpanel2]
+                                    [label #f]
+                                    ;[init-value ""]
+                                    ;[vert-margin 10]	 
+                                    ;[horiz-margin 10]
+                                    [min-width 10]
+                                    ;[min-height 20]
+                                    ))
+
+(define final-label (new message% [parent vpanel2]
+                          [label "Final"]))
+
+
 ;Panel vertical terciario
-;Incluye radio buttons (Paths) y boton (Search)
-(define vpanel3 (new vertical-panel% [parent vpanel2]
+;
+(define vpanel3 (new vertical-panel% [parent hpanel2]
                      [alignment '(center center)]
-                     [vert-margin 5]	 
-                     [horiz-margin 5]))
+                     ;[vert-margin 5]	 
+                     ;[horiz-margin 5]
+                     ))
 
 
 ;Radio Button Selection
@@ -454,30 +619,33 @@ Favor seleccione un nodo como Destino Inicial."]
 (new button% [parent vpanel3]
              [label "Begin Search"]
              [callback (lambda (button event)
-                         
+                         ;Ingresa el texto de los fields a sus respectivas variables
+                         (set! initial-destiny (send initial-text-field get-value))
+                         (set! final-destiny (send  final-text-field get-value))
                          (set! path-selection (send rbuttons get-selection) )
-                         (check-rbuttons)
-                       ;(send instructions-text-field set-value "Begin Search Button")
+
+                         (begin-search)
+                         
+                        ;Para dejar de mostrar los botones
+                         ;(send rbuttons show #f)
+
                          )])
 
 
-;Panel horizontal terciario
-;Incluye boton (Undo) y vpanel3 (radio buttons y boton (Search))
-(define hpanel3 (new horizontal-panel% [parent vpanel2]
-                     [alignment '(center center)]))
+
 
 
 ;Boton Undo
-(new button% [parent hpanel3]
-             [label "Undo"]
-             [vert-margin 10]	 
-             [horiz-margin 5]
-             [callback (lambda (button event)
-                       (send instructions-text-field set-value "Undo Button"))])
+;(new button% [parent hpanel3]
+;             [label "Undo"]
+;             [vert-margin 10]	 
+;             [horiz-margin 5]
+;             [callback (lambda (button event)
+;                       (send instructions-text-field set-value "Undo Button"))])
 
 
 ;Boton New Path
-(new button% [parent hpanel3]
+(new button% [parent vpanel3]
              [label "New Path"]
              [vert-margin 10]	 
              [horiz-margin 5]
