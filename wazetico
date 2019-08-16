@@ -66,12 +66,23 @@
 (define search-state "")
 
 
+;Lista con el camino mas corto y su peso
+(define shortest-path '()  )
+
+;Lista con todos los caminos y sus pesos
+(define all-paths '() )
+
+;Cantidad de caminos por ruta actual
+(define path-num 0)
+
+
 ;Pens
 (define no-pen (make-object pen% "BLACK" 1 'transparent))
 (define no-brush (make-object brush% "BLACK" 'transparent))
-(define one-way-pen (make-object pen% "SILVER" 2 'solid))
-(define two-way-pen (make-object pen% "DARK MAGENTA" 2 'solid))
+(define one-way-pen (make-object pen% "Gainsboro" 3 'solid))
+(define two-way-pen (make-object pen% "DARK GRAY" 3 'solid))
 (define black-pen (make-object pen% "BLACK" 2 'solid))
+(define red-pen (make-object pen% "RED" 2 'solid))
 
 
 ;Brushes
@@ -123,6 +134,9 @@
         )
    )
 )
+
+
+;----------------------------------------Graficar Nodos----------------------------------------;
 
 
 ;Funcion para dibujar un nodo
@@ -187,30 +201,10 @@
 )
 
 
-;Funcion para dibujar una linea
-;Parametros:
-;   ini: nodo inicial
-;   fin: nodo final
-;   way: cantidad de vias (1 o 2)
-(define (draw-line dc ini fin way)
-  (cond ( (equal? way 1)
-          ;Cambia al pen para una via
-          (send dc set-pen one-way-pen)
-          ;Dibuja solo las flechas de los caminos de una sola via
-          (draw-arrows (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y"))
-              (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
-         )
-        ( (equal? way 2)
-          ;Cambia al pen para dos vias
-          (send dc set-pen two-way-pen)
-         )
-    )
-  ;Manda a dibujar la linea
-  (send dc draw-line
-        (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y"))
-        (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
-        ; + 10 ya que el nodo tiene radio de 20 -> asi la linea queda en el medio
-  )
+;----------------------------------------Graficar Nodos----------------------------------------;
+
+
+;---------------------------------------Graficar Lineas---------------------------------------;
 
 
 ;Funcion para dibujar todas las lineas (inicio de aplicacion)
@@ -248,6 +242,33 @@
          )
     )
   )
+
+
+;Funcion para dibujar una linea
+;Parametros:
+;   ini: nodo inicial
+;   fin: nodo final
+;   way: cantidad de vias (1 o 2)
+(define (draw-line dc ini fin way)
+  (cond ( (equal? way 1)
+          ;Cambia al pen para una via
+          (send dc set-pen one-way-pen)
+          ;Dibuja solo las flechas de los caminos de una sola via
+          (draw-arrows (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y"))
+              (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
+         )
+        ( (equal? way 2)
+          ;Cambia al pen para dos vias
+          (send dc set-pen two-way-pen)
+         )
+    )
+  ;Manda a dibujar la linea
+  (send dc draw-line
+        (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y"))
+        (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
+        ; + 10 ya que el nodo tiene radio de 20 -> asi la linea queda en el medio
+  )
+
 
 ;Funcion para verificar si el camino es one-way o two-way
 ;Parametros:
@@ -300,13 +321,16 @@
 
 ;Funcion para dibujar una flecha cerca de la linea
 ;Parametros:
-;
-;
-;
-;
+;   x1:
+;   y1:
+;   x2:
+;   y2:
 (define (draw-arrows x1 y1 x2 y2)
-  (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2) (/ (+ y1 (/ (+ y1 y2) 2)) 2)
-              (/ (+ (/ (+ x1 x2) 2) x2) 2) (/ (+ (/ (+ y1 y2) 2) y2) 2) 10 10)
+  (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 10 10)
   )
 
 
@@ -315,6 +339,8 @@
   #t
   )
 
+
+;---------------------------------------Graficar Lineas---------------------------------------;
 
 
 ;;Funciones post-inicio
@@ -325,7 +351,6 @@
   (cond ( (equal? #t (check-fields)) ;Si los campos de texto estan correctos
           ;Se informa en el text-box sobre la busqueda
           (search-info)
-          
           ;Se inicia la busqueda de los caminos dependiendo del estado de seleccion del usuario
           (search-by-state)
          )
@@ -341,17 +366,14 @@
         ;Si el destino inicial no esta en los nodos
           (send instructions-text-field set-value
               "El destino inicial seleccionado no existe.\nIngrese un nuevo destino." )
-          #f
-        )
+          #f )
         ( (equal? #f (check-destiny-field final-destiny nodes-list) )
         ;Si el destino final no esta en los nodos
           (send instructions-text-field set-value
               "El destino final seleccionado no existe.\nIngrese un nuevo destino." )
-          #f
-        )
+          #f )
         (else
-         #t
-         )
+         #t )
   )
 )
 
@@ -361,11 +383,9 @@
 ;   list: nodes-list
 (define (check-destiny-field text list)
   (cond ( (null? list)
-          #f
-         )
+          #f )
         ( (equal? text ( number->string (caar list)) )
-          #t
-         )
+          #t )
         (else
          (check-destiny-field text (cdr list))
          )
@@ -375,6 +395,7 @@
 
 ;Funcion para cambiar el texto de instructions-text-field al presionar "Search"
 (define (search-info)
+  ;Se guarda en un string la seleccion de los radio buttons
 (cond ( (equal? 0 path-selection)
         (set! search-state "Camino más corto" )
        )
@@ -383,11 +404,11 @@
        )
       )
 
+  ;Se cambia el texto del text-field
   (send instructions-text-field set-value (string-append
                                            "Tipo de Busqueda: " search-state
                                            "\n\nDestino Inicial: " initial-destiny
-                                           "\nDestino Final: " final-destiny
-                                           )
+                                           "\nDestino Final: " final-destiny )
         )
   )
 
@@ -395,40 +416,196 @@
 ;Funcion para empezar la busqueda de caminos dependiendo de la seleccion del usuario
 (define (search-by-state)
   (cond ( (equal? 0 path-selection)
-          
+          ;Camino mas corto
+          (shortest-path-search (string->number initial-destiny) (string->number final-destiny) )
          )
         ( (equal? 1 path-selection)
-          
+          ;Todos los caminos
+          (all-paths-search (string->number initial-destiny) (string->number final-destiny) )
          )
         (else
-         (send instructions-text-field set-value "Tipo de Busqueda no seleccionado."
+         (send instructions-text-field set-value "Tipo de Busqueda no seleccionado.")
          )
     )
   )
 
 
-;Funcion para enviar a buscar las rutas
-(define (send-destinies)
-  (test-search-paths initial-destiny final-destiny graph (number->string path-selection))
+
+;Funcion para graficar el CAMINO MAS CORTO
+(define (shortest-path-search ini fin)
+  ;Se llama a la funcion BuscaCaminos en el archivo de logica
+  ;Se guarda la lista con el camino y el peso
+  (set! shortest-path (buscaCaminoCorto ini fin grafo) )
+  
+  ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
+  (draw-all-lines)
+  ;Llama a dibujar el camino mas corto
+  (draw-path shortest-path)
+  ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
+  (draw-all-nodes)
+
+  ;Ingresa la informacion del camino al text-field
+  (send information-text-field set-value (string-append "Información de Rutas\n"
+                                                        "Ruta más corta:\nPeso:"
+                                                        (number->string (cadr shortest-path))
+                                                        ) )
+ )
+
+
+
+;Funcion para graficar TODOS LOS CAMINOS
+(define (all-paths-search ini fin)
+  ;Se llama a la funcion BuscaCaminos en el archivo de logica
+  ;Se guarda la lista con los caminos y los pesos
+  (set! all-paths (buscaCaminos ini fin grafo) )
+
+  ;Ingresa las informaciones de los caminos al text-field
+  (set-path-info all-paths)
+
+  ;Crea los botones necesarios
+  (set-path-buttons (length all-paths) )
+
+  ; Wait a second to let the window get ready
+                         (sleep/yield 1)
+
+  ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
+  (draw-all-lines)
+  ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
+  (draw-all-nodes)
+  
+ )
+
+
+
+
+
+
+;Funcion para graficar un camino
+;Parametros:
+;   list: lista con el camino y el peso
+(define (draw-path list)
+  (draw-path-aux (car list))
+  )
+
+;Funcion auxilir para graficar un camino 
+;Parametros:
+;   path-list: lista solo con el camino
+(define (draw-path-aux path-list)
+  (cond ( (null? (cddr path-list) )
+          ;Grafica una linea entre los ultimos dos nodos
+          (build-path dc (car path-list) (cadr path-list) )
+         )
+        (else
+          ;Grafica una linea entre dos nodos
+          (build-path dc (car path-list) (cadr path-list) )
+          (draw-path-aux (cdr path-list) ) ;Elimina el primer nodo de la lista
+         )
+    )
   )
 
 
+;Funcion para dibujar una linea
+;Parametros:
+;   ini: nodo inicial
+;   fin: nodo final
+;   way: cantidad de vias (1 o 2)
+(define (build-path dc ini fin)
 
-;Funcion test para buscar rutas
-(define (test-search-paths ini fin graph npaths)
-  (send instructions-text-field set-value (string-append
-                                           "Searching paths: " npaths ".\n"
-                                           ini " -> " fin) )
+  (send dc set-pen red-pen)
+  
+  ;Manda a dibujar la linea
+  (send dc draw-line
+        (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y"))
+        (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
+        ; + 10 ya que el nodo tiene radio de 20 -> asi la linea queda en el medio
 
-(send instructions-text-field set-value (string-append (number->string (caaar (buscaCaminos (string->number ini) (string->number fin) grafo)) )
-                                                       (number->string (cadaar (buscaCaminos (string->number ini) (string->number fin) grafo)) )
-                                                       ) )
-  ;(string->number ini) (string->number fin)
-)
+  )
 
 
+;Funcion para ingresar la informacion de los caminos
+(define (set-path-info paths-list)
+  
+  (send information-text-field set-value (string-append "Información de Rutas\n"
+                                                        (set-path-info-aux paths-list 1) ) )
+  
+  )
+
+;Funcion para ingresar la informacion de los caminos
+(define (set-path-info-aux paths-list n)
+  
+  (cond ( (null? paths-list )
+          (set! path-num n)
+          " "
+         )
+        (else
+         (string-append "-> Ruta " (number->string n) ":\n     Peso: " (number->string (cadar paths-list)) "\n" 
+                        (set-path-info-aux (cdr paths-list) (+ 1 n) ) )
+         )
+        )
+  
+  )
 
 
+;Funcion para agregar los botones de las rutas
+(define (set-path-buttons n)
+  (cond ( (equal? 1 n)
+          ;Boton TEST
+          (new button% [parent vpanel-buttons] [label (string-append "Ruta " (number->string n) )]
+               [callback (lambda (button event)
+                           ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
+                           (draw-all-lines)
+                           
+                           (build-specific-path n all-paths)
+
+                           ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
+                           (draw-all-nodes)
+                           
+                           ;(send information-text-field set-value (number->string n) )
+                         )])
+         )
+        (else
+         ;Boton TEST
+          (new button% [parent vpanel-buttons] [label (string-append "Ruta " (number->string n) )]
+               [callback (lambda (button event)
+                       ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
+                           (draw-all-lines)
+                           
+                           (build-specific-path n all-paths)
+
+                           ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
+                           (draw-all-nodes)
+                           
+                           ;(send information-text-field set-value (number->string n) )
+                         )])
+
+          (set-path-buttons (- n 1) )
+
+         )
+        )
+  )
+
+;Funcion para graficar una ruta especifica
+;Usada en los botones dinamicos
+(define (build-specific-path n paths)
+  (cond ( (<= n (length paths))   
+          (cond ( (equal? n 1)
+                  (draw-path (car paths))
+                 )
+                (else
+                 (build-specific-path (- n 1) (cdr paths) )
+                 )
+            )
+          
+         )
+        (else
+         #f
+         ;MENSAJE DE ERROR EN TEXT-BOX
+         ;NO EXISTE ESA RUTA
+         )
+        
+         
+        )
+  )
 
 
 ;Funcion para dibujar una ruta
@@ -473,9 +650,9 @@
                             [alignment '(center center)]))
 
 
-;Boton Undo
+;Boton Iniciar
 (define initial-initialize-buton (new button% [parent hpanel-initial]
-             [label "Initialize"]
+             [label "Iniciar"]
              [vert-margin 10]	 
              [horiz-margin 5]
              [callback (lambda (button event)
@@ -492,13 +669,13 @@
 
 
 ;Boton Help!
-(define initial-help-buton (new button% [parent hpanel-initial]
-             [label "Help!"]
-             [vert-margin 10]	 
-             [horiz-margin 5]
-             ;[callback (lambda (button event))]
+;(define initial-help-buton (new button% [parent hpanel-initial]
+;             [label "Help!"]
+;             [vert-margin 10]	 
+;             [horiz-margin 5]
+;             [callback (lambda (button event))]
 
-                         ))
+;                        ))
                   
 
 
@@ -508,15 +685,14 @@
 
 ; Frame principal
 (define main-frame (new frame% [label "WazeTico"]
-                   [width 1100]
+                   [width 1105]
                    [height 660]
                    [alignment '(left top)]))
 
 
 ;Panel principal (horizontal)
-(define main-panel (new horizontal-panel% [parent main-frame]
-                        ))
-
+(define main-panel (new horizontal-panel% [parent main-frame] ))
+ 
 
 ;Panel vertical
 ;Incluye cavas(mapa) y panel horizontal secundario
@@ -609,9 +785,6 @@ Favor ingrese el destino inicial y el destino final.\n"]
 (define rbuttons (new radio-box% [label ""]
      [choices '("Shortest Path" "All Paths")]
      [parent vpanel3]
-    ; [callback (lambda (control-event))
-                 ;(set path-selection (send rbuttons get-selection)) )
-                   ; ]
 ))
      
 
@@ -661,6 +834,53 @@ Favor ingrese el destino inicial y el destino final.\n"]
                                     [horiz-margin 10]
                                     [min-width 160]
                                     [min-height 640]))
+
+
+;Panel vertical terciario
+;
+(define vpanel-buttons (new vertical-panel% [parent main-panel]
+                     [alignment '(center center)]
+                     ;[vert-margin 5]	 
+                     ;[horiz-margin 5]
+                     ))
+#|
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+;Boton TEST
+(new button% [parent vpanel-buttons] [label "Ruta N"] )
+|#
 
 
 ;; Initial
