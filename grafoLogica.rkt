@@ -264,7 +264,7 @@
 
 ;;RETORNA TODAS LAS RUTAS DE UN PUNTO A OTRO CON SU PESO TOTAL
 (define (buscaCaminos ini fin grafo)
-  (buscaCaminosAux (buscaCaminos2 ini fin grafo) (distanciasTotalesRutas (buscaCaminos3 ini fin grafo)) '())
+  (ordenarRutas (buscaCaminosAux (buscaCaminos2 ini fin grafo) (distanciasTotalesRutas (buscaCaminos3 ini fin grafo)) '()) '())
   )
 
 (define (buscaCaminosAux rutas pesosPorRuta listaFinal)
@@ -272,3 +272,20 @@
           listaFinal)
         (else
          (buscaCaminosAux (cdr rutas) (cdr pesosPorRuta)  (append listaFinal (list (cons (car rutas) (list (car pesosPorRuta)))))))))
+
+;;InsertaElementoOrdenado
+(define (insertarElementoOrdenado ele lista)
+  (cond ( (null? lista)
+          (list ele))
+        ( (> (cadr ele) (cadar lista))
+          (cons (car lista)
+                (insertarElementoOrdenado ele (cdr lista))))
+        ( else
+          (cons ele lista))))
+
+;;Genera una lista con las rutas ordenadas
+(define (ordenarRutas rutas rutasOrdenadas)
+  (cond ( (null? rutas)
+          rutasOrdenadas)
+        ( else
+          (ordenarRutas (cdr rutas) (insertarElementoOrdenado (car rutas) rutasOrdenadas)))))
