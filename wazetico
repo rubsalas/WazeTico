@@ -23,7 +23,7 @@
         (41 521 169) (42 540 90)
         (51 88 189) (52 137 70)
         (61 274 189) (62 736 428)
-        (71 678 159) (72 736 339)
+        (71 678 159) (72 740 330)
      )
   )
 
@@ -319,24 +319,67 @@
 (define (draw-arrows x1 y1 x2 y2)
   (send dc set-pen arrow-pen)
   (send dc set-brush arrow-brush)
-#|
-  (cond ( (equal? #t (and (equal? x1 ) (equal? y1  ) (equal? x2  ) (equal? y2 ) ) )
 
+  (cond
+        ;23->22
+        ( (equal? #t (and (equal? x1 (+ 265 15) ) (equal? x2 (+ 432 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 0 8)
           )
-        ( (equal? #t (and (equal? x1 ) (equal? y1  ) (equal? x2  ) (equal? y2 ) ) )
+        ;41->42
+        ( (equal? #t (and (equal? x1 (+ 521 15) ) (equal? x2 (+ 540 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 9 2)
+          )
+        ;71->32
+        ( (equal? #t (and (equal? x1 (+ 678 15) ) (equal? x2 (+ 687 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 9 0)
+          )
+        ;72->62
+        ( (equal? #t (and (equal? x1 (+ 740 15) ) (equal? x2 (+ 736 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 9 0)
+          )
+        ;62->14
+        ( (equal? #t (and (equal? x1 (+ 736 15) ) (equal? x2 (+ 638 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 -5 6)
+          )
+        ;13->14
+        ( (equal? #t (and (equal? x1 (+ 510 15) ) (equal? x2 (+ 638 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 0 9)
+          )
+        #|( (equal? #t (and (equal? x1 ) (equal? y1  ) (equal? x2  ) (equal? y2 ) ) )
 
-          )
-        ( (equal? #t (and (equal? x1 ) (equal? y1  ) (equal? x2  ) (equal? y2 ) ) )
-
-          )
-    )
-|#
-  
-  (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+          )|#
+        (else
+         (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
                  (/ (+ y1 (/ (+ y1 y2) 2)) 2)
                  (/ (+ (/ (+ x1 x2) 2) x2) 2)
                  (/ (+ (/ (+ y1 y2) 2) y2) 2)
                  6 7)
+         )
+    )
   )
 
 
@@ -374,7 +417,72 @@
 ;Funcion para mostrar el peso de la linea cerca de esta
 (define (draw-weight x1 y1 x2 y2 w)
   
-  (cond ( (> 50 (abs (- x1 x2))  )
+  (cond
+    ;23->22
+    ( (equal? #t (and (equal? x1 (+ 265 15) ) (equal? x2 (+ 432 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) -7)
+                ( + (/ (+ y1 y2) 2) 10)
+                )
+         )
+    ;71->32
+    ( (equal? #t (and (equal? x1 (+ 678 15) ) (equal? x2 (+ 687 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 12)
+                ( + (/ (+ y1 y2) 2) -10)
+                )
+         )
+    ;32->72
+    ( (equal? #t (and (equal? x1 (+ 687 15) ) (equal? x2 (+ 740 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 8)
+                ( + (/ (+ y1 y2) 2) -12)
+                )
+         )
+    ;32->72 (Al ser doble)
+    ( (equal? #t (and (equal? x1 (+ 740 15) ) (equal? x2 (+ 687 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 8)
+                ( + (/ (+ y1 y2) 2) -12)
+                )
+         )
+    ;72->62
+    ( (equal? #t (and (equal? x1 (+ 740 15) ) (equal? x2 (+ 736 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 12)
+                ( + (/ (+ y1 y2) 2) -10)
+                )
+         )
+    ;62->14
+    ( (equal? #t (and (equal? x1 (+ 736 15) ) (equal? x2 (+ 638 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) -12)
+                ( + (/ (+ y1 y2) 2) 10)
+                )
+         )
+    ;13->14
+    ( (equal? #t (and (equal? x1 (+ 510 15) ) (equal? x2 (+ 638 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) -11)
+                ( + (/ (+ y1 y2) 2) 11)
+                )
+         )
+    ;31->13
+    ( (equal? #t (and (equal? x1 (+ 589 15) ) (equal? x2 (+ 510 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 10)
+                ( + (/ (+ y1 y2) 2) 8)
+                )
+         )
+        ( (>= 70 (abs (- x1 x2))  )
           ;Sumar solo en x
           ;Dibuja el texto
           (send dc draw-text (number->string w)
@@ -382,7 +490,7 @@
                 ( + (/ (+ y1 y2) 2) 0)
                 )
          )
-        ( (> 50 (abs (- y1 y2))  )
+        ( (>= 70 (abs (- y1 y2))  )
           ;Sumar solo en y
           ;Dibuja el texto
           (send dc draw-text (number->string w)
@@ -394,8 +502,8 @@
          ;Suma en ambos
          ;Dibuja el texto
           (send dc draw-text (number->string w)
-                ( + (/ (+ x1 x2) 2) 5)
-                ( + (/ (+ y1 y2) 2) 5)
+                ( + (/ (+ x1 x2) 2) 6)
+                ( + (/ (+ y1 y2) 2) 6)
                 )
          )
     )
@@ -463,10 +571,10 @@
 (define (search-info)
   ;Se guarda en un string la seleccion de los radio buttons
 (cond ( (equal? 0 path-selection)
-        (set! search-state "Camino más corto" )
+        (set! search-state "Ruta más Corta" )
        )
       ( (equal? 1 path-selection)
-        (set! search-state "Todos los caminos" )
+        (set! search-state "Todas las Rutas" )
        )
       )
 
@@ -839,8 +947,10 @@ Favor ingrese un nuevo destino inicial y un nuevo destino final.\n")
 (define instructions-text-field ( new text-field% [parent hpanel2]
                                     [label #f]
                                     [init-value
-                                     "Bienvenidos a WazeTico!\n
-Favor ingrese el destino inicial y el destino final.\n"]
+                                     "¡Bienvenido a WazeTico!\n
+-> Favor ingrese el destino inicial y el destino final.
+-> Seleccione el tipo de rutas que desea observar.
+-> Presione \"Buscar\" para iniciar."]
                                     [vert-margin 10]	 
                                     [horiz-margin 10]
                                     [min-width 600]
@@ -888,14 +998,14 @@ Favor ingrese el destino inicial y el destino final.\n"]
 
 ;Radio Button Selection
 (define rbuttons (new radio-box% [label ""]
-     [choices '("Ruta Más Corta" "Todas las Rutas")]
+     [choices '("Ruta más Corta" "Todas las Rutas")]
      [parent vpanel3]
 ))
      
 
 ;Boton Search
 (define search-button (new button% [parent vpanel3]
-             [label "Buscar Rutas"]
+             [label "Buscar"]
              [callback (lambda (button event)
                          ;Ingresa el texto de los fields a sus respectivas variables
                          (set! initial-destiny (send initial-text-field get-value))
@@ -909,7 +1019,7 @@ Favor ingrese el destino inicial y el destino final.\n"]
 
 ;Boton New Path
 (define new-search-button (new button% [parent vpanel3]
-             [label "Nuevos Destinos"]
+             [label "Cambiar Destinos"]
              [vert-margin 10]	 
              [horiz-margin 5]
              [callback (lambda (button event)
