@@ -55,6 +55,62 @@
                  (72 ((62 10) (14 6) (32 4)))
   ))
 
+;;GrafoDinamico
+(define grafoDinamico '()
+  )
+
+;; Agregar ciudades para grafoDinamico
+;; E: #id ciudad, grafo mixto
+;; S: grafo mixto con la ciudad añadida
+;; R: # ciudad vacío, literales.
+;;> (agregarCiudad 3 '())
+;;'((3 ()))
+(define (agregarCiudad id grafo)
+  (cond ( (null? grafo) 
+          (list (append (list id) (list grafo)))) ;;si el grafo está vacío, añada la ciudad
+        ( else
+           (append grafo (list (list id '()))));; sino, agregue la ciudad al grafo      
+ ))
+
+;; Agregar caminos entre ciudades
+(define (agregarCamino idIni idFin peso grafo)
+  (agregarCaminoAux idIni idFin peso grafo '()))
+
+(define (agregarCaminoAux idIni idFin peso grafo grafoFinal)
+  (cond ( (null? grafo) ;;Condición base: Cuando ya se terminó de recorrer el grafo, finalice
+          grafoFinal) ;;retorne el nuevo grafo generado 'grafoFinal'.
+        ( else
+          (cond ( (equal? idIni (caar grafo)) ;;valida si está recorriendo la ciudad de origen en el grafo
+                  (agregarCaminoAux idIni idFin peso (cdr grafo) ;;recorre la función nuevamente ahora sin el primer elemnto en el grafo
+                                    (append grafoFinal ;;grafoFinal ahora es la unión del grafo en formación +
+                                            (list (append (list(caar grafo)) ;;la ciudad de origen +
+                                                          (list (modificarConexionesCiudad (list idFin peso) (cadar grafo)))))))) ;;conexiones de la ciudad incluyendo el nuevo camino
+                (else
+                 (agregarCaminoAux idIni idFin peso (cdr grafo) ;;recorre la función nuevamente ahora sin el primer elemnto en el grafo
+                                   (append grafoFinal ;;grafoFinal ahora es la unión del grafo en formación +
+                                           (list(car grafo))) ;;el primer elemento en el grafo en desintegración.
+                 )
+                )
+            )
+          )
+   )
+)
+
+
+;; Agrega un nodo a la lista de conexiones de una ciudad
+;; E: id: nodo compuesto por ciudad y peso.
+;; S: lista de nodos conexiones
+;; R: nodos vacíos
+(define (modificarConexionesCiudad id lista)
+  (modificarConexionesCiudadAux id lista))
+
+(define (modificarConexionesCiudadAux id lista)
+  (cond ( (null? lista);;si la lista esta vacía
+          (list (append lista id))) ;;agrege el nodo a la lista
+        ( else ;;sino
+           (append lista (list id)));; una la actual lista de conexiones con el nodo   
+ ))
+
 ;;Grado precargado de prueba
 (define gg '( (i (a b))
               (a (i c d))
@@ -81,7 +137,10 @@
   (cond ( (equal? resultado #f)
           #f)
         ( else
-          (cadr resultado))))
+          (cond ( (null? (cdr resultado))
+                  (cdr resultado))
+                (else
+                 (cadr resultado))))))
 
 ;;Me indica si un nodo es parte de una ruta.
 (define (miembro? ele lista)
