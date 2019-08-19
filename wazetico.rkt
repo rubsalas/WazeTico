@@ -9,10 +9,22 @@
 
 ;Destino inicial de la ruta
 (define initial-destiny "")
-
-
+ 
 ;Destino final de la ruta
 (define final-destiny "")
+
+
+;Ciudad actual por agregar
+(define actual-new-city -1)
+
+;Ciudad inicial donde sale el camino nuevo
+(define actual-initial-city -1)
+
+;Ciudad final donde llega el camino nuevo
+(define actual-final-city -1)
+
+;Peso del nuevo camino
+(define actual-weight -1)
 
 
 ;Lista de Nodos con coordenadas
@@ -514,24 +526,236 @@
 ;----------------------------------------Graficar Pesos----------------------------------------;
 
 
+
 ;;Funciones post-inicio
+
+
+
+;----------------------------------------Agregar Ciudad----------------------------------------;
+
+
+;Funcion para agregar una nueva ciudad al mapa
+(define (add-city)
+
+  ;Se ingresa el texto del field a la varible
+  (set! actual-new-city (send add-city-text-field get-value))
+
+  (cond ( (equal? #f (check-city actual-new-city))
+          ;Si se encuentra que la ciudad no puede ser agregada
+          ;Se manda un mensaje de error dentro de la funcion llamada
+          #f
+         )
+        (else
+         ;Se agrega el nuevo nodo a grafoDinamico
+         (agregarCiudad (string->number actual-new-city) grafoDinamico)
+         (send instructions-text-field set-value (string-append "AGREGADO: " actual-new-city))
+         ;;;Pedir x y y con mouse-event
+         ;;;Graficar
+         )
+    )
+  )
+
+
+;Funcion para verificar si la ciudad puede ser agregada al mapa
+(define (check-city city)
+  (check-city-aux city grafoDinamico)
+  )
+
+;Funcion auxiliar para verificar si la ciudad puede ser agregada al mapa
+(define (check-city-aux city graph)
+  ;Verifica que la ciudad ingresada sea una ciudad valida
+  (cond ( (equal? #t (check-city-node city) )
+          ;Verifica que la ciudad ingresada sea una ciudad que no exista ya
+          (cond ( (equal? #t (check-city-existence city graph) )
+                  #t
+                  )
+                (else
+                 (send instructions-text-field set-value
+                       "La ciudad deseada ya se encuentra en al mapa.\nIngrese una ciudad no existente." )
+                 #f
+                 )
+             )
+          )
+        (else
+         (send instructions-text-field set-value
+               "La ciudad deseada no puede ser agregada al mapa.\nIngrese una ciudad entre 0 y 99." )
+         #f
+         )
+    )
+  )
+  
+
+
+;Funcion para verificar que la ciudad tenga el formato deseado (0 a 99)
+(define (check-city-node city)
+  (check-city-node-aux city 99)
+  )
+
+;Funcion auxiliar para verificar que la ciudad tenga el formato deseado (0 a 99)
+(define (check-city-node-aux city n)
+  (cond ( (equal? n 0)
+          #f
+         )
+        ( (equal? city (number->string n))
+          #t
+         )
+        (else
+         (check-city-node-aux city (- n 1))
+         )
+    )
+  )
+
+;Funcion para verificar que el nodo existe en grafoDinamico
+(define (check-city-existence city graph)
+  (cond ( (null? graph)
+          #t
+         )
+        ( (equal? (string->number city) (caar graph) )
+          #t
+         )
+        (else
+         (check-city-existence city (cdr graph) )
+         )
+    )
+  )
+
+
+;----------------------------------------Agregar Ciudad----------------------------------------;
+
+
+
+;----------------------------------------Agregar Camino----------------------------------------;
+
+
+;Funcion para agregar un camino entre dos ciudades en el mapa
+(define (add-road)
+
+  ;Se ingresa el texto del field a la varible
+  (set! actual-initial-city (send add-road-initial-text-field get-value))
+  (set! actual-final-city (send add-road-final-text-field get-value))
+  (set! actual-weight (send add-road-weight-text-field get-value))
+
+  (cond ( (equal? #f (check-road actual-initial-city actual-final-city))
+          ;Si se encuentra que los destinos no se encuentran en el mapa
+          ;Se manda un mensaje de error dentro de la funcion llamada
+          #f
+         )
+        (else
+         (cond ( (equal? #f (check-weight actual-weight))
+                 ;Si se encuentra que el peso no es adecuado al formato
+                 ;Se manda un mensaje de error dentro de la funcion llamada
+                 #f
+                 )
+               (else
+                (cond ( (equal? #f (check-road-existence actual-initial-city actual-final-city actual-weight))
+                        ;Si se encuentra que el camino se repite
+                        ;Se mantiene el camino y se sobreescribe el peso
+                        ;Se manda un mensaje de confirmacion dentro de la funcion llamada
+                        #f
+                        )
+                      (else
+                       #t
+                       ;Verificar que el camino no se repita
+                       ;O que si se repite solo se cambie el peso
+                       
+                       )
+                    )
+                )
+             )
+         )
+    )
+  )
+
+;Funcion que verifica la validez del camino por agregar
+(define (check-road i-city f-city)
+  (cond ( (equal? #f (check-road-aux i-city grafoDinamico) )
+        ;Cond inicial
+          (send instructions-text-field set-value
+              "La ciudad inicial seleccionada no existe.\nIngrese una nueva ciudad." )
+          #f )
+        ( (equal? #f (check-road-aux f-city grafoDinamico) )
+        ;Cond final
+          (send instructions-text-field set-value
+              "La ciudad final seleccionada no existe.\nIngrese una nueva ciudad." )
+          #f )
+        (else
+         #t )
+     )
+  )
+
+;Funcion auxiliar que verifica la validez del camino por agregar
+(define (check-road-aux city graph)
+  (cond ( (null? graph)
+        #t
+        )
+        ( (equal? city (number->string (caar graph)))
+          #f
+         )
+        (else
+         (check-road-aux city (cdr graph) )
+         )
+      )
+  )
+
+
+;Funcion para verificar que el peso del camino se apegue al formato de estos (1-20)
+(define (check-weight weight)
+  (cond ( (equal? #f (check-weight-aux weight 20) )
+          ;Si el peso esta mal
+          (send instructions-text-field set-value
+              "La distancia deseada no se encuentra dentro del rango de 0 y 20.\nIngrese una nueva distancia." )
+          #f )
+        (else
+         ;Si el peso es adecuado para el mapa
+         #t )
+     )
+  )
+
+
+;Funcion auxiliar para verificar que el peso del camino se apegue al formato de estos (1-20)
+(define (check-weight-aux weight max)
+  (cond ( (equal? 0 max)
+          #f
+         )
+        ( (equal? weight (number->string max))
+         #t
+         )
+        (else
+         (check-weight-aux weight (- max 1) )
+         )
+    )
+  )
+
+
+;Funcion para verificar la existencia del camino deseado
+;Si este existe, se mantiene el camino y se sobreescribe el peso.
+(define (check-road-existence i-city f-city weight)
+  (check-road-existence-aux i-city f-city weight grafoDinamico)
+  )
+
+;Funcion auxiliar para verificar la existencia del camino deseado
+(define (check-road-existence-aux i-city f-city weight graph)
+
+  #t
+  
+  )
+
+
+
+;----------------------------------------Agregar Camino----------------------------------------;
+
+
+
+;---------------------------------------Busqueda de Rutas---------------------------------------;
 
 
 ;Funcion para iniciar la busqueda de los caminos
 (define (begin-search)
   (cond ( (equal? #t (check-fields)) ;Si los campos de texto estan correctos
-          ;Deshabilita el boton de busqueda y los radio-buttons
-          (send search-button enable #f)
-          (send rbuttons enable #f)
-          ;Se informa en el text-box sobre la busqueda
-          (search-info)
-          ;Se inicia la busqueda de los caminos dependiendo del estado de seleccion del usuario
-          (search-by-state)
+          #f
          )
     )
  )
-
-
 
 
 ;Funcion para verificar los fields antes de buscar las rutas
@@ -793,7 +1017,6 @@
          (get-button (- n 1) (cdr list))
          )
    )
-
   )
 
 
@@ -822,7 +1045,6 @@
                  (build-specific-path (- n 1) (cdr paths) )
                  )
             )
-          
          )
         (else
          (send instructions-text-field set-value "Ruta inexistente")
@@ -857,10 +1079,14 @@ Favor ingrese un nuevo destino inicial y un nuevo destino final.\n")
   )
 
 
+;---------------------------------------Busqueda de Rutas---------------------------------------;
+
+
+
 ;;Widgets
 
 
-;;;Pantalla Inicial
+;========================================Pantalla Inicial========================================;
 
 
 ;Frame inicial
@@ -896,16 +1122,23 @@ Favor ingrese un nuevo destino inicial y un nuevo destino final.\n")
                          (send initial-frame show #f)
                          ;Abre la ventana principal
                          (send main-frame show #t)
+                         
+                         #|
                          ; Wait a second to let the window get ready
                          (sleep/yield 1)
                          ;Initial draws
                          (draw-all-lines)
                          (draw-all-nodes)
                          (draw-all-weights)
+                         |#
+                         
                          )]))
 
 
-;;;Pantalla Principal
+;========================================Pantalla Inicial========================================;
+
+
+;========================================Pantalla Principal========================================;
 
 
 ; Frame principal
@@ -953,45 +1186,78 @@ Favor ingrese un nuevo destino inicial y un nuevo destino final.\n")
 -> Presione \"Buscar\" para iniciar."]
                                     [vert-margin 10]	 
                                     [horiz-margin 10]
-                                    [min-width 600]
+                                    [min-width 385]
                                     [min-height 120]))
 
-;Panel horizontal terciario
-;
-(define hpanel3 (new horizontal-panel% [parent hpanel2]
-                     [alignment '(center center)]
-                     ))
 
 
-;Panel vertical secundario
-;
+
+;Panel vertical II
+;Agregar Ciudad
 (define vpanel2 (new vertical-panel% [parent hpanel2]
                      [alignment '(center center)]))
 
 
-;Text-field de instrucciones
-(define initial-text-field ( new text-field% [parent vpanel2]
+;Text-field de agregar ciudad
+(define add-city-text-field ( new text-field% [parent vpanel2]
                                     [label #f]
                                     [min-width 10]
                                     ))
 
+;Label de agregar ciudad
+(define add-city-label (new message% [parent vpanel2]
+                          [label "Nuevo Nodo"]))
 
-(define intial-label (new message% [parent vpanel2]
+;Boton Search
+(define add-city-button (new button% [parent vpanel2]
+             [label "Agregar Ciudad"]
+             [callback (lambda (button event)
+                         (add-city)
+                         )]))
+
+
+
+;Boton Agregar Camino
+(define add-road-button (new button% [parent vpanel2]
+             [label "Agregar Camino"]
+             [callback (lambda (button event)
+                         (send add-road-frame show #t)
+                         )]))
+
+
+
+
+;Panel vertical IV
+;Destinos
+(define vpanel4 (new vertical-panel% [parent hpanel2]
+                     [alignment '(center center)]))
+
+
+;Text-field de destino inicial
+(define initial-text-field ( new text-field% [parent vpanel4]
+                                    [label #f]
+                                    [min-width 10]
+                                    ))
+
+;Label de destino Inicial
+(define intial-label (new message% [parent vpanel4]
                           [label "Destino Inicial"]))
 
-;Text-field de instrucciones
-(define final-text-field ( new text-field% [parent vpanel2]
+
+;Text-field de destino final
+(define final-text-field ( new text-field% [parent vpanel4]
                                     [label #f]
                                     [min-width 10]
                                     ))
 
-(define final-label (new message% [parent vpanel2]
+;Label de destino Final
+(define final-label (new message% [parent vpanel4]
                           [label "Destino Final"]))
 
 
-;Panel vertical terciario
-;
-(define vpanel3 (new vertical-panel% [parent hpanel2]
+;Panel vertical V
+;Busqueda
+(define vpanel5 (new vertical-panel% [parent hpanel2]
                      [alignment '(center center)]
                      ))
 
@@ -999,12 +1265,12 @@ Favor ingrese un nuevo destino inicial y un nuevo destino final.\n")
 ;Radio Button Selection
 (define rbuttons (new radio-box% [label ""]
      [choices '("Ruta más Corta" "Todas las Rutas")]
-     [parent vpanel3]
+     [parent vpanel5]
 ))
      
 
 ;Boton Search
-(define search-button (new button% [parent vpanel3]
+(define search-button (new button% [parent vpanel5]
              [label "Buscar"]
              [callback (lambda (button event)
                          ;Ingresa el texto de los fields a sus respectivas variables
@@ -1018,7 +1284,7 @@ Favor ingrese un nuevo destino inicial y un nuevo destino final.\n")
 
 
 ;Boton New Path
-(define new-search-button (new button% [parent vpanel3]
+(define new-search-button (new button% [parent vpanel5]
              [label "Cambiar Destinos"]
              [vert-margin 10]	 
              [horiz-margin 5]
@@ -1051,6 +1317,70 @@ Favor ingrese un nuevo destino inicial y un nuevo destino final.\n")
                              [horiz-margin 3]
                      [alignment '(center center)]
                      ))
+
+
+
+
+
+
+
+
+;=====================================Window de Agregar Camino=====================================;
+
+
+;Frame de Agregar Camino
+(define add-road-frame (new frame% [label "Agregar Camino"]
+                   [width 140]
+                   [height 180]
+                   [alignment '(center center)]))
+
+
+;Panel vertical III
+;Agregar Camino
+(define vpanel3 (new vertical-panel% [parent add-road-frame]
+                     [alignment '(center center)]))
+
+
+;Text-field de agregar ciudad
+(define add-road-initial-text-field (new text-field% [parent vpanel3]
+                                    [label #f]
+                                    [min-width 10]
+                                    ))
+
+;Label de agregar ciudad
+(define add-road-initial-label (new message% [parent vpanel3]
+                          [label "Ciudad Inicial"]))
+
+;Text-field de destino Final
+(define add-road-final-text-field ( new text-field% [parent vpanel3]
+                                    [label #f]
+                                    [min-width 10]
+                                    ))
+
+;Label de destino Final
+(define add-road-final-label (new message% [parent vpanel3]
+                          [label "Ciudad Final"]))
+
+;Text-field de peso
+(define add-road-weight-text-field (new text-field% [parent vpanel3]
+                                    [label #f]
+                                    [min-width 10]
+                                    ))
+
+;Label de peso
+(define add-road-weight-label (new message% [parent vpanel3]
+                          [label "Distancia"]))
+
+;Boton Agregar Camino
+(define add-road-window-button (new button% [parent vpanel3]
+             [label "Agregar Camino"]
+             [callback (lambda (button event)
+                         (add-road)
+                         )]))
+
+
+;=====================================Window de Agregar Camino=====================================;
+
 
 
 ;;Inicio de Aplicacion
