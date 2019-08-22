@@ -4,14 +4,21 @@
 (require "grafoLogica.rkt")
 
 
+#|
 
+Interfaz de WazeTico
+Creación: 12/08/19
+Autor: Rubén Salas
+Version: 2.0
+
+|#
 
 
 ;-------------------------------------------Variables-------------------------------------------;
 
 
 ;GrafoDinamico
-(define node-map '() )
+(define nodes-map '() )
 
 ;Lista de Coordenadas
 (define coords-list '() )
@@ -44,7 +51,8 @@
 (define final-destiny "")
 
 #|
-;Utilizado para graficar el grafo preestablecido
+;Utilizado para graficar el grafo preestablecido antes de
+;haber hecho el programa dinamico.
 ;Lista de Nodos con coordenadas
 (define nodes-list '(
         (11 442 279) (12 343 309) (13 510 339) (14 638 378)
@@ -181,7 +189,7 @@
                 )
                (else
                        ;Se agrega el nuevo nodo a grafoDinamico
-                       (set! node-map (agregarCiudad (string->number actual-new-city) node-map))
+                       (set! nodes-map (agregarCiudad (string->number actual-new-city) nodes-map))
                        ;Se agrega el nodo y sus posiciones a coords-list
                        (set! coords-list (set-city-position (string->number actual-new-city)
                                    (string->number actual-new-city-x-pos)
@@ -213,7 +221,7 @@
 
 ;Funcion para verificar si la ciudad puede ser agregada al mapa
 (define (check-city city)
-  (check-city-aux city node-map)
+  (check-city-aux city nodes-map)
   )
 
 ;Funcion auxiliar para verificar si la ciudad puede ser agregada al mapa
@@ -322,7 +330,7 @@
   (cond ( (send search-button is-enabled?)
           #t
          )
-        ( (and #t (<= 5 (length node-map)) searchable)
+        ( (and #t (<= 5 (length nodes-map)) searchable)
           ;Habilita el boton de busqueda y los radio-buttons
           (send initial-text-field enable #t)
           (send final-text-field enable #t)
@@ -330,7 +338,7 @@
           (send rbuttons enable #t)
           
          )
-        ( (equal? 2 (length node-map))
+        ( (equal? 2 (length nodes-map))
           (send add-road-button enable #t)
          )
     )
@@ -360,7 +368,13 @@
           #f
          )
         (else
-         (cond ( (equal? #f (check-weight actual-weight))
+         (cond ( (equal? #f (check-same-road actual-initial-city actual-final-city))
+                ;Si se encuentra que los destinos son iguales
+                ;Se manda un mensaje de error dentro de la funcion llamada
+                #f
+                )
+               (else
+                (cond ( (equal? #f (check-weight actual-weight))
                  ;Si se encuentra que el peso no es adecuado al formato
                  ;Se manda un mensaje de error dentro de la funcion llamada
                  #f
@@ -372,13 +386,19 @@
                         #f
                         )
                       (else
-                       #t
+                       (cond ( (equal? #f (check-road-inverse-existence actual-initial-city actual-final-city actual-weight))
+                               ;Si se encuentra que la distancia del camino para hacerlo de doble via no es igual a de solo una via
+                               ;Se manda un mensaje de confirmacion dentro de la funcion llamada
+                               #f
+                              )
+                             (else
+                              #t
                        ;Verificar que el camino no se repita
                        ;O que si se repite solo se cambie el peso
-                       (set! node-map (agregarCamino
+                       (set! nodes-map (agregarCamino
                               (string->number actual-initial-city)
                               (string->number actual-final-city)
-                              (string->number actual-weight) node-map))
+                              (string->number actual-weight) nodes-map))
                        ;Guarda el peso es una lista para ser graficado
                        (save-road-weight (string->number actual-initial-city)
                                          (string->number actual-final-city)
@@ -405,22 +425,26 @@
                        (cond ( (equal? #f searchable)
                                (set! searchable #t)
                                (check-city-quantity)))
+                              )
+                         )
                        )
                     )
                 )
              )
+                )
          )
     )
+  )
   )
 
 ;Funcion que verifica la validez del camino por agregar
 (define (check-road i-city f-city)
-  (cond ( (equal? #f (check-road-aux i-city node-map) )
+  (cond ( (equal? #f (check-road-aux i-city nodes-map) )
         ;Cond inicial
           (send instructions-text-field set-value
               "-> La ciudad inicial seleccionada no existe.\n-> Ingrese una nueva ciudad." )
           #f )
-        ( (equal? #f (check-road-aux f-city node-map) )
+        ( (equal? #f (check-road-aux f-city nodes-map) )
         ;Cond final
           (send instructions-text-field set-value
               "-> La ciudad final seleccionada no existe.\n-> Ingrese una nueva ciudad." )
@@ -444,6 +468,17 @@
       )
   )
 
+;Fucion para verificar que las rutas no sean iguales
+(define (check-same-road i-city f-city)
+  (cond ( (equal? #t (equal? i-city f-city) )
+        ;Cond final
+          (send instructions-text-field set-value
+              "-> Las ciudades deben ser diferentes.\n-> Ingrese nuevas ciudades." )
+          #f )
+        (else
+         #t )
+    )
+  )
 
 ;Funcion para verificar que el peso del camino se apegue al formato de estos (1-20)
 (define (check-weight weight)
@@ -477,7 +512,7 @@
 ;Funcion para verificar la existencia del camino deseado
 ;Si este existe, se mantiene el camino y se sobreescribe el peso.
 (define (check-road-existence i-city f-city weight)
-  (check-road-existence-aux i-city f-city weight node-map)
+  (check-road-existence-aux i-city f-city weight nodes-map)
   )
 
 ;Funcion auxiliar para verificar la existencia del camino deseado
@@ -491,6 +526,44 @@
          )
         (else
          (check-road-existence-aux i-city f-city weight (cdr graph))
+         )
+        )
+  )
+
+
+;Funcion para verificar si existe el camino inverso y si el peso es igual
+(define (check-road-inverse-existence i-city f-city weight)
+
+  (cond ( (equal? #t (and (equal? #t (check-road-existence i-city f-city weight)) (equal? #t (check-road-existence f-city i-city weight))))
+         ;Si no existe ninguno de los dos caminos
+          #t
+         )
+        ( (equal? #f (check-road-existence f-city i-city weight))
+          ;Si existe el camino inverso, puede verificarse que el peso sea igual
+         (check-road-inverse-existence-aux i-city f-city weight weights-list)
+         )
+        (else
+         ;Si no existe el camino inverso, se grafica normal
+         
+         #t)
+        )
+  )
+  
+;Funcion auxiliar para verificar si existe el camino inverso y si el peso es igual
+(define (check-road-inverse-existence-aux i-city f-city weight list)
+  (cond ( (null? list)
+          ;Si el peso no es igual
+          (send instructions-text-field set-value
+              "-> La distancia deseada debe ser igual a la del camino \n     inverso.\n-> Ingrese la distancia correspondiente." )
+          #f
+         )
+        ( (equal? #t (and (equal? (string->number f-city) (caar list) )
+                          (equal? (string->number i-city) (cadar list) )
+                          (equal? (string->number weight) (caddar list) ) ) )
+          ;Si el camino inverso existe y el peso es igual
+          #t )
+        (else
+         (check-road-inverse-existence-aux i-city f-city weight (cdr list))
          )
         )
   )
@@ -666,7 +739,7 @@
 
 ;Funcion para dibujar todas las lineas (inicio de aplicacion)
 (define (draw-all-lines)
-  (draw-all-lines-aux node-map);CAMBIO
+  (draw-all-lines-aux nodes-map);CAMBIO
   )
 
 ;Funcion auxiliar para dibujar todas las lineas (inicio de aplicacion)
@@ -732,7 +805,7 @@
 ;   node: nodo por verificar
 ;   fin: nodo por encontrar camino
 (define (check-ways node fin)
-  (check-ways-aux node fin node-map);CAMBIO
+  (check-ways-aux node fin nodes-map);CAMBIO
   )
 
 ;Funcion auxiliar para verificar si el camino es one-way o two-way
@@ -777,46 +850,52 @@
 
 
 ;Funcion para dibujar una flecha cerca de la linea
-;Parametros:
-;   x1:
-;   y1:
-;   x2:
-;   y2:
 (define (draw-arrows x1 y1 x2 y2)
   (send dc set-pen arrow-pen)
   (send dc set-brush arrow-brush)
 
-   (cond ( (equal? #t (and (>= x1 x2) (>= y1 y2) ) )  ;1
+   (cond ( (equal? #t  (equal? x1 x2) )  ;x1 == x2
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 10 0)
+         )
+        ( (equal? #t  (equal? y1 y2) )  ;y1 == y2
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 0 10)
+         )
+        ( (equal? #t (and (> x1 x2) (> y1 y2) ) )  ;1
           (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
                  (/ (+ y1 (/ (+ y1 y2) 2)) 2)
                  (/ (+ (/ (+ x1 x2) 2) x2) 2)
                  (/ (+ (/ (+ y1 y2) 2) y2) 2)
                  -8 8)
          )
-        ( (equal? #t (and (<= x1 x2) (>= y1 y2) ) )  ;2
+        ( (equal? #t (and (< x1 x2) (> y1 y2) ) )  ;2
           (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
                  (/ (+ y1 (/ (+ y1 y2) 2)) 2)
                  (/ (+ (/ (+ x1 x2) 2) x2) 2)
                  (/ (+ (/ (+ y1 y2) 2) y2) 2)
                  8 8)
          )
-        ( (equal? #t (and (>= x1 x2) (<= y1 y2) ) )  ;3
+        ( (equal? #t (and (> x1 x2) (< y1 y2) ) )  ;3
           (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
                  (/ (+ y1 (/ (+ y1 y2) 2)) 2)
                  (/ (+ (/ (+ x1 x2) 2) x2) 2)
                  (/ (+ (/ (+ y1 y2) 2) y2) 2)
                  8 8)
          )
-        ( (equal? #t (and (<= x1 x2) (<= y1 y2) ) )  ;4
+        ( (equal? #t (and (< x1 x2) (< y1 y2) ) )  ;4
           (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
                  (/ (+ y1 (/ (+ y1 y2) 2)) 2)
                  (/ (+ (/ (+ x1 x2) 2) x2) 2)
                  (/ (+ (/ (+ y1 y2) 2) y2) 2)
                  -8 8)
          )
-        #|( (equal? #t (and (equal? x1 ) (equal? y1  ) (equal? x2  ) (equal? y2 ) ) )
-
-          )|#
         (else
          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
                  (/ (+ y1 (/ (+ y1 y2) 2)) 2)
@@ -824,8 +903,8 @@
                  (/ (+ (/ (+ y1 y2) 2) y2) 2)
                  20 20)
          )
-    )
-  )
+     )
+ )
 
 
 
@@ -866,28 +945,42 @@
 ;Funcion para mostrar el peso de la linea cerca de esta
 (define (draw-weight x1 y1 x2 y2 w)
   
-  (cond ( (equal? #t (and (>= x1 x2) (>= y1 y2) ) )  ;1
+  (cond ( (equal? #t  (equal? x1 x2) )  ;x1 == x2
+          ;Dibuja el texto
+          (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 10)
+                ( + (/ (+ y1 y2) 2) 0)
+                )
+         )
+        ( (equal? #t  (equal? y1 y2) )  ;y1 == y2
+          ;Dibuja el texto
+          (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 0)
+                ( + (/ (+ y1 y2) 2) 10)
+                )
+         )
+        ( (equal? #t (and (> x1 x2) (> y1 y2) ) )  ;1
           ;Dibuja el texto
           (send dc draw-text (number->string w)
                 ( + (/ (+ x1 x2) 2) -20)
                 ( + (/ (+ y1 y2) 2) 10)
                 )
          )
-        ( (equal? #t (and (<= x1 x2) (>= y1 y2) ) )  ;2
+        ( (equal? #t (and (< x1 x2) (> y1 y2) ) )  ;2
           ;Dibuja el texto
           (send dc draw-text (number->string w)
                 ( + (/ (+ x1 x2) 2) 10)
                 ( + (/ (+ y1 y2) 2) 10)
                 )
          )
-        ( (equal? #t (and (>= x1 x2) (<= y1 y2) ) )  ;3
+        ( (equal? #t (and (> x1 x2) (< y1 y2) ) )  ;3
           ;Dibuja el texto
           (send dc draw-text (number->string w)
                 ( + (/ (+ x1 x2) 2) 10)
                 ( + (/ (+ y1 y2) 2) 10)
                 )
          )
-        ( (equal? #t (and (<= x1 x2) (<= y1 y2) ) )  ;4
+        ( (equal? #t (and (< x1 x2) (< y1 y2) ) )  ;4
           ;Dibuja el texto
           (send dc draw-text (number->string w)
                 ( + (/ (+ x1 x2) 2) -20)
@@ -919,7 +1012,8 @@
 
 ;Funcion para iniciar la busqueda de los caminos
 (define (begin-search)
-  (cond ( (equal? #t (check-fields)) ;Si los campos de texto estan correctos
+  (cond ( (equal? #f (equal? initial-destiny final-destiny))
+      (cond ( (equal? #t (check-fields)) ;Si los campos de texto estan correctos
           ;Deshabilita botones
           (send add-city-button enable #f)
           (send add-road-button enable #f)
@@ -932,21 +1026,39 @@
           ;Se inicia la busqueda de los caminos dependiendo del estado de seleccion del usuario
           (search-by-state)
          )
-    )
+        (else
+         ;(send information-text-field set-value
+         ;     "-> Error en busqueda II." )
+         #t
+         )
+       )
+     )
+        (else
+         ;Si el destino inicial y final es el mismo
+          (send instructions-text-field set-value
+              "-> Los destinos deben ser diferentes.\n-> Ingrese nuevos destinos." )
+         )
+        
+   )
  )
 
 
 ;Funcion para verificar los fields antes de buscar las rutas
 (define (check-fields)
-  (cond ( (equal? #f (check-destiny-field initial-destiny coords-list) )
+  (cond 
+        ( (equal? #f (check-destiny-field initial-destiny coords-list) )
         ;Si el destino inicial no esta en los nodos
           (send instructions-text-field set-value
               "-> El destino inicial seleccionado no existe.\n-> Ingrese un nuevo destino." )
+          ; Wait a second to let the window get ready
+  ;(sleep/yield 0.1)
           #f )
         ( (equal? #f (check-destiny-field final-destiny coords-list) )
         ;Si el destino final no esta en los nodos
           (send instructions-text-field set-value
               "-> El destino final seleccionado no existe.\n-> Ingrese un nuevo destino." )
+          ; Wait a second to let the window get ready
+  ;(sleep/yield 0.1)
           #f )
         (else
          #t )
@@ -957,13 +1069,13 @@
 ;Parametros:
 ;   text: string escrito en text-box
 ;   list: nodes-list
-(define (check-destiny-field text list)
+(define (check-destiny-field destiny list)
   (cond ( (null? list)
           #f )
-        ( (equal? text ( number->string (caar list)) )
+        ( (equal? destiny ( number->string (caar list)) )
           #t )
         (else
-         (check-destiny-field text (cdr list))
+         (check-destiny-field destiny (cdr list))
          )
     )
   )
@@ -1000,7 +1112,7 @@
           (all-paths-search (string->number initial-destiny) (string->number final-destiny) )
          )
         (else
-         (send instructions-text-field set-value "Tipo de Busqueda no seleccionado.")
+         (send instructions-text-field set-value "-> Tipo de Busqueda no seleccionado.")
          )
     )
   )
@@ -1010,27 +1122,35 @@
 (define (shortest-path-search ini fin)
   ;Se llama a la funcion BuscaCaminos en el archivo de logica
   ;Se guarda la lista con el camino y el peso
-  (set! shortest-path (buscaCaminoCorto ini fin node-map) )
-  
-  ; Wait a second to let the window get ready
-  (sleep/yield 0.1)
-  ;Dibuja el grid
-  (draw-grid)
-  ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
-  (draw-all-lines)
-  ;Llama a dibujar el camino mas corto
-  (draw-path shortest-path)
-  ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
-  (draw-all-nodes)
-  ;Se dibujan nuevamente los pesos
-  (draw-all-weights)
+  (set! shortest-path (buscaCaminoCorto ini fin nodes-map) )
 
-  ;Ingresa la informacion del camino al text-field
-  (send information-text-field set-value (string-append "Información de Rutas:\n"
+  ;Verificar si shortest-path esta vacio
+  (cond ( (null? shortest-path)
+          ;Si no se encuentra una ruta
+          (send instructions-text-field set-value "No se ha encontrado ninguna ruta.")
+         )
+        (else
+         ;Si se encuentra una ruta
+         ; Wait a second to let the window get ready
+         (sleep/yield 0.1)
+         ;Dibuja el grid
+         (draw-grid)
+         ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
+         (draw-all-lines)
+         ;Llama a dibujar el camino mas corto
+         (draw-path shortest-path)
+         ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
+         (draw-all-nodes)
+         ;Se dibujan nuevamente los pesos
+         (draw-all-weights)
+
+         ;Ingresa la informacion del camino al text-field
+         (send information-text-field set-value (string-append "Información de Rutas:\n"
                                                         "Ruta más corta:\nPeso:"
-                                                        (number->string (cadr shortest-path))
-                                                        ))
- )
+                                                        (number->string (cadr shortest-path))))
+         )
+      )
+   )
 
 
 
@@ -1038,30 +1158,37 @@
 (define (all-paths-search ini fin)
   ;Se llama a la funcion BuscaCaminos en el archivo de logica
   ;Se guarda la lista con los caminos y los pesos
-  (set! all-paths (buscaCaminos ini fin node-map) )
+  (set! all-paths (buscaCaminos ini fin nodes-map) )
 
-  ;Ingresa las informaciones de los caminos al text-field
-  (set-path-info all-paths)
-
-  ;Crea los botones necesarios
-  (set-path-buttons (length all-paths) 1)
-  ;Se guarda una lista con los botones actuales
-  (set! actual-buttons (send vpanel-buttons get-children) )
+  ;Verificar si shortest-path esta vacio
+  (cond ( (null? all-paths)
+          ;Si no se encuentra una ruta
+          (send instructions-text-field set-value "No se ha encontrado ninguna ruta.")
+         )
+        (else
+         ;Ingresa las informaciones de los caminos al text-field
+         (set-path-info all-paths)
+         
+         ;Crea los botones necesarios
+         (set-path-buttons (length all-paths) 1)
+         ;Se guarda una lista con los botones actuales
+         (set! actual-buttons (send vpanel-buttons get-children) )
   
-  ; Wait a second to let the window get ready
-  (sleep/yield 0.1)
+         ; Wait a second to let the window get ready
+         (sleep/yield 0.1)
 
-  ;Dibuja el grid
-  (draw-grid)
-  ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
-  (draw-all-lines)
-  ;Llama a dibujar el camino mas corto
-  (draw-path (car all-paths) )
-  ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
-  (draw-all-nodes)
-  ;Se dibujan nuevamente los pesos
-  (draw-all-weights)
-  
+         ;Dibuja el grid
+         (draw-grid)
+         ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
+         (draw-all-lines)
+         ;Llama a dibujar el camino mas corto
+         (draw-path (car all-paths) )
+         ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
+         (draw-all-nodes)
+         ;Se dibujan nuevamente los pesos
+         (draw-all-weights)
+         )
+     )
  )
 
 
@@ -1459,7 +1586,7 @@
              [callback (lambda (button event)
                          ;Ingresa el texto de los fields a sus respectivas variables
                          (set! initial-destiny (send initial-text-field get-value))
-                         (set! final-destiny (send  final-text-field get-value))
+                         (set! final-destiny (send final-text-field get-value))
                          (set! path-selection (send rbuttons get-selection) )
                          ;Comienza el proceso de busqueda
                          (begin-search)
