@@ -1127,7 +1127,7 @@ Version: 2.0
   ;Verificar si shortest-path esta vacio
   (cond ( (null? shortest-path)
           ;Si no se encuentra una ruta
-          (send instructions-text-field set-value "No se ha encontrado ninguna ruta.")
+          (send instructions-text-field set-value "-> No se ha encontrado ninguna ruta.")
          )
         (else
          ;Si se encuentra una ruta
@@ -1163,7 +1163,7 @@ Version: 2.0
   ;Verificar si shortest-path esta vacio
   (cond ( (null? all-paths)
           ;Si no se encuentra una ruta
-          (send instructions-text-field set-value "No se ha encontrado ninguna ruta.")
+          (send instructions-text-field set-value "-> No se ha encontrado ninguna ruta.")
          )
         (else
          ;Ingresa las informaciones de los caminos al text-field
@@ -1355,7 +1355,7 @@ Version: 2.0
             )
          )
         (else
-         (send instructions-text-field set-value "Ruta inexistente")
+         (send instructions-text-field set-value "-> Ruta inexistente")
          )
 
         )
@@ -1412,17 +1412,28 @@ Version: 2.0
                    [height 200]
                    [alignment '(center center)]))
 
-
 ;Panel vertical
 ;Incluye title y hpanel-initial
 (define vpanel-initial (new vertical-panel% [parent initial-frame]
                             [alignment '(center center)]))
 
 
-; Make a static text message in the frame
-(define title (new message% [parent vpanel-initial]
-                          [label "WazeTico"]))
+;---------------------------------------------------------------------------------
 
+;Dirección de archivo específico en documentos propios
+
+(require racket/draw
+         net/url)
+
+;Toma la imagen de un directorio especifico
+(define logo (read-bitmap (get-pure-port 
+(string->url "file:////home/ruben/Desktop/inicio.jpg"))))
+
+; Muestra la imagen del logo
+(define title (new message% [parent vpanel-initial]
+                          [label logo]))
+
+;---------------------------------------------------------------------------------
 
 ;Panel horizontal
 (define hpanel-initial (new horizontal-panel% [parent vpanel-initial]
