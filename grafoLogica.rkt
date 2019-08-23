@@ -310,10 +310,13 @@
 
 ;;RETORNA RUTA MAS CORTA
 (define (buscaCaminoCorto ini fin grafo)
-  (buscaCaminoCortoAux (buscaCaminos3 ini fin grafo) (buscaCaminos2 ini fin grafo))) 
+  (buscaCaminoCortoAux (buscaCaminos3 ini fin grafo) (buscaCaminos2 ini fin grafo)))
 
 (define (buscaCaminoCortoAux rutas rutasSinPeso)
-  (buscaCaminoCortoAux2 (menorLista (distanciasTotalesRutas rutas)) rutas rutasSinPeso))
+  (cond ( (null? rutas)
+          rutas)
+        ( else
+          (buscaCaminoCortoAux2 (menorLista (distanciasTotalesRutas rutas)) rutas rutasSinPeso))))
 
 (define (buscaCaminoCortoAux2 num rutas rutasSinPeso)
   (cond ( (zero? num)

@@ -1,0 +1,281 @@
+#lang racket
+(require racket/gui)
+
+
+;; Variables
+
+
+;Lista de Nodos con coordenadas
+(define nodes-list '(
+        (11 442 299) (12 343 329) (13 540 359) (14 638 388)
+        (21 393 239) (22 442 149) (23 245 60)
+        (31 589 299) (32 687 269)
+        (41 491 179) (42 540 120)
+        (51 98 209) (52 147 90)
+        (61 294 209) (62 736 448)
+        (71 638 179) (72 736 359)
+     )
+  )
+
+
+;Grafo
+(define graph '( (51 ((52 9)))
+                 (52 ((23 8)))
+                 (23 ((61 9) (22 8)))
+                 (61 ((23 9) (51 10) (21 4)))
+                 (21 ((61 4) (22 5) (12 3)))
+                 (22 ((21 5)))
+                 (12 ((11 2)))
+                 (11 ((41 6) (31 2)))
+                 (41 ((11 6) (42 2) (71 4)))
+                 (42 ((22 3)))
+                 (71 ((32 5)))
+                 (32 ((31 2) (72 4)))
+                 (31 ((32 2) (11 2) (13 1)))
+                 (13 ((14 3)))
+                 (14 ((72 6)))
+                 (62 ((14 7)))
+                 (72 ((62 10) (14 6) (32 4)))
+                )
+  )
+
+
+;Pens
+(define no-pen (make-object pen% "BLACK" 1 'transparent))
+(define no-brush (make-object brush% "BLACK" 'transparent))
+(define one-way-pen (make-object pen% "SILVER" 2 'solid))
+(define two-way-pen (make-object pen% "DARK MAGENTA" 2 'solid))
+(define black-pen (make-object pen% "BLACK" 2 'solid))
+
+
+;Brushes
+(define green-brush (make-object brush% "GREEN" 'solid))
+(define yellow-green-brush (make-object brush% "YELLOW GREEN" 'solid))
+(define dark-green-brush (make-object brush% "DARK GREEN" 'solid))
+(define aquamarine-brush (make-object brush% "AQUAMARINE" 'solid))
+(define medium-turquoise-brush (make-object brush% "MEDIUM TURQUOISE" 'solid))
+(define blue-brush (make-object brush% "BLUE" 'solid))
+(define royal-blue-brush (make-object brush% "ROYAL BLUE" 'solid))
+(define black-brush (make-object brush% "BLACK" 'solid))
+
+
+
+;;Funciones
+
+
+;Funcion para encontrar la coordenada deseada del nodo
+;Parametros:
+;   nodo: numero de ciudad
+;   pos: coordenada ("x" o "y")
+(define (get-coord nodo pos)
+  (get-coord-aux nodo pos nodes-list)
+    )
+
+;Funcion auxiliar para encontrar la coordenada deseada del nodo
+;Parametros:
+;   nodo: numero de ciudad
+;   pos: coordenada ("x" o "y")
+;   list: nodes-list
+(define (get-coord-aux nodo pos list)
+  (cond( (null? list)
+         -1)
+       ( (equal? nodo (caar list))
+         (cond( (equal? pos "x")
+                (cadar list)
+               )
+              ( (equal? pos "y")
+                (caddar list)
+               )
+              (else
+               -1)
+           )
+        )
+       (else
+        (get-coord-aux nodo pos (cdr list))
+        )
+   )
+)
+
+
+;Funcion para dibujar un nodo
+;Parametros:
+;   dc: Drawing Context
+;   node: numero de ciudad
+;   x: coordenada en x
+;   y: coordenada en y
+(define (draw-node dc node x y)
+
+  (cond ( (equal? (quotient node 10) 1)
+          (send dc set-brush green-brush)
+         )
+        ( (equal? (quotient node 10) 2)
+          (send dc set-brush yellow-green-brush)
+         )
+        ( (equal? (quotient node 10) 3)
+          (send dc set-brush dark-green-brush)
+         )
+        ( (equal? (quotient node 10) 4)
+          (send dc set-brush aquamarine-brush)
+         )
+        ( (equal? (quotient node 10) 5)
+          (send dc set-brush royal-blue-brush)
+         )
+        ( (equal? (quotient node 10) 6)
+          (send dc set-brush blue-brush)
+         )
+        ( (equal? (quotient node 10) 7)
+          (send dc set-brush medium-turquoise-brush)
+         )
+        (else
+         (send dc set-brush black-brush)
+         )
+    )
+
+  (send dc set-pen no-pen)
+  (send dc draw-ellipse x y 20 20)
+ 
+)
+
+
+;Funcion para dibujar todos los nodos al iniciar la aplicacion
+;Llama a una funcion auxiliar
+(define (draw-all-nodes)
+  (draw-all-nodes-aux nodes-list dc)
+  )
+
+;Funcion auxiliar para dibujar todos los nodos al iniciar la aplicacion
+;Parametros:
+;   list: nodes-list
+;   dc: Drawing Context
+(define (draw-all-nodes-aux list dc)
+  (cond ( (null? (cdr list) )
+              (draw-node dc (caar list) (cadar list) (caddar list) )
+           )
+        (else
+             (draw-node dc (caar list) (cadar list) (caddar list) )
+             (draw-all-nodes-aux (cdr list) dc)
+         )
+  )
+  
+)
+
+
+;Funcion para dibujar una linea
+;Parametros:
+;   ini: nodo inicial
+;   fin: nodo final
+;   way: cantidad de vias (1 o 2)
+(define (draw-line dc ini fin way)
+  (cond ( (equal? way 1)
+          (send dc set-pen one-way-pen)
+         )
+        ( (equal? way 2)
+          (send dc set-pen two-way-pen)
+         )
+    )
+
+  (send dc draw-line (+ 10 (get-coord ini "x")) (+ 10 (get-coord ini "y")) (+ 10 (get-coord fin "x")) (+ 10 (get-coord fin "y")) )
+ )
+
+
+;Funcion para dibujar todas las lineas (inicio de aplicacion)
+
+
+;Funcion para dibujar una ruta
+
+
+;Funcion para dibujar todas las rutas
+;O dibujar la ruta seleccionada
+
+
+
+
+
+;;Widgets
+
+
+; Frame principal
+(define main-frame (new frame% [label "WazeTico"]
+                   [width 1100]
+                    [height 660]
+                    [alignment '(left top)] ))
+
+
+;Panel principal (horizontal)
+(define main-panel (new horizontal-panel% [parent main-frame]))
+
+
+;Panel vertical
+;Incluye cavas(mapa) y panel horizontal secundario
+(define vpanel (new vertical-panel% [parent main-panel]))
+
+
+;Canvas donde se muestra el grafo
+(define map-canvas (new canvas% [parent vpanel]
+                       [style '(border)]
+                       [label "MAP"] 
+                       [vert-margin 10]	 
+                       [horiz-margin 10]
+                       [min-height 500]))
+
+
+;Drawing Context de map-canvas
+(define dc (send map-canvas get-dc))
+
+
+;Panel horizontal secundario
+;Incluye text-field (instrucciones), boton "Search" y boton "Back"
+(define hpanel2 (new horizontal-panel% [parent vpanel]))
+
+
+;Text-field de instrucciones
+(define instructions-text-field ( new text-field% [parent hpanel2]
+                                    [label #f]
+                                    [vert-margin 10]	 
+                                    [horiz-margin 10]
+                                    [min-width 600]
+                                    [min-height 120]))
+
+
+;Boton Search
+(new button% [parent hpanel2]
+             [label "Search"])
+            ; [callback (lambda (button event)
+                 ;        (send msg set-label "Left click"))])
+
+
+;Boton Back
+(new button% [parent hpanel2]
+             [label "Back"])
+           ;  [callback (lambda (button event)
+                ;         (send msg set-label "Right click"))])
+
+
+;Text-field de informacion
+(define information-text-field ( new text-field% [parent main-panel]
+                                    [label #f]
+                                    [vert-margin 10]	 
+                                    [horiz-margin 10]
+                                    [min-width 160]
+                                    [min-height 640]))
+
+
+;; Initial
+
+
+; Se muestra el frame principal
+(send main-frame show #t)
+
+; Wait a second to let the window get ready
+(sleep/yield 1)
+
+;Test Draw Circle
+;(draw-node dc 71 784 477 )
+
+;Test Draw Line
+(draw-line dc 72 62 1)
+(draw-line dc 62 14 1)
+(draw-line dc 72 14 2)
+
+;Draw all circles
+(draw-all-nodes-aux nodes-list dc)

@@ -1,0 +1,1059 @@
+#lang racket
+(require racket/gui)
+(require racket/draw/arrow)
+(require "grafoLogica.rkt")
+
+
+;; Variables
+
+
+;Destino inicial de la ruta
+(define initial-destiny "")
+
+
+;Destino final de la ruta
+(define final-destiny "")
+
+
+;Lista de Nodos con coordenadas
+(define nodes-list '(
+        (11 442 279) (12 343 309) (13 510 339) (14 638 378)
+        (21 393 219) (22 432 104) (23 265 40)
+        (31 589 279) (32 687 249)
+        (41 521 169) (42 540 90)
+        (51 88 189) (52 137 70)
+        (61 274 189) (62 736 428)
+        (71 678 159) (72 740 330)
+     )
+  )
+
+
+;Color list
+(define color-list '("LightCoral" "Red" "Orange" "Olive" "Yellow"
+                                 "Green" "Turquoise" "Blue" "Purple"
+                                 "LightCoral" "Olive" "Spring Green"
+                                 "DeepSkyBlue" "Light Steel Blue"
+                                 "Magenta" "Medium Sea Green" "Chocolate" )
+                                 )
+
+
+;Variable de estado de seleccion de rutas
+(define path-selection -1)
+
+;Estado de seleccion de rutas
+(define search-state "")
+
+
+;Lista con el camino mas corto y su peso
+(define shortest-path '() )
+
+;Lista con todos los caminos y sus pesos
+(define all-paths '() )
+
+;Cantidad de caminos por ruta actual
+(define path-num 0)
+
+
+;Lista con botones actuales
+(define actual-buttons '() )
+
+
+;Pens
+(define no-pen (make-object pen% "BLACK" 1 'transparent))
+(define no-brush (make-object brush% "BLACK" 'transparent))
+(define one-way-pen (make-object pen% "GAINSBORO" 4 'solid))
+(define arrow-pen (make-object pen% "GAINSBORO" 1 'solid))
+(define two-way-pen (make-object pen% "DIM GRAY" 4 'solid))
+(define black-pen (make-object pen% "BLACK" 2 'solid))
+(define red-pen (make-object pen% "RED" 4 'solid))
+(define weight-pen (make-object pen% "BLACK" 1 'solid))
+(define white-pen (make-object pen% "SNOW" 1 'solid))
+
+
+;Brushes
+(define green-brush (make-object brush% "GREEN" 'solid))
+(define yellow-green-brush (make-object brush% "YELLOW GREEN" 'solid))
+(define salmon-brush (make-object brush% "SALMON" 'solid))
+(define aquamarine-brush (make-object brush% "AQUAMARINE" 'solid))
+(define medium-turquoise-brush (make-object brush% "MEDIUM TURQUOISE" 'solid))
+(define chocolate-brush (make-object brush% "CHOCOLATE" 'solid))
+(define lightblue-brush (make-object brush% "LIGHTBLUE" 'solid))
+(define black-brush (make-object brush% "BLACK" 'solid))
+(define arrow-brush (make-object brush% "GAINSBORO" 'solid))
+
+
+
+;;Funciones
+
+
+;;Funciones iniciales
+
+;Funcion para encontrar la coordenada deseada de un nodo
+;Parametros:
+;   nodo: numero de ciudad
+;   pos: coordenada ("x" o "y")
+(define (get-coord nodo pos)
+  (get-coord-aux nodo pos nodes-list)
+    )
+
+;Funcion auxiliar para encontrar la coordenada deseada de un nodo
+;Parametros:
+;   nodo: numero de ciudad
+;   pos: coordenada ("x" o "y")
+;   list: nodes-list
+(define (get-coord-aux nodo pos list)
+  (cond( (null? list)
+         -1)
+       ( (equal? nodo (caar list))
+         (cond( (equal? pos "x")
+                (cadar list)
+               )
+              ( (equal? pos "y")
+                (caddar list)
+               )
+              (else
+               -1)
+           )
+        )
+       (else
+        (get-coord-aux nodo pos (cdr list))
+        )
+   )
+)
+
+
+;----------------------------------------Graficar Nodos----------------------------------------;
+
+
+;Funcion para dibujar todos los nodos al iniciar la aplicacion
+;Llama a una funcion auxiliar
+(define (draw-all-nodes)
+  (draw-all-nodes-aux nodes-list dc)
+  )
+
+;Funcion auxiliar para dibujar todos los nodos al iniciar la aplicacion
+;Parametros:
+;   list: nodes-list
+;   dc: Drawing Context
+(define (draw-all-nodes-aux list dc)
+  (cond ( (null? (cdr list) )
+              (draw-node dc (caar list) (cadar list) (caddar list) )
+           )
+        (else
+             (draw-node dc (caar list) (cadar list) (caddar list) )
+             (draw-all-nodes-aux (cdr list) dc)
+         )
+  )
+)
+
+
+;Funcion para dibujar un nodo
+;Parametros:
+;   dc: Drawing Context
+;   node: numero de ciudad
+;   x: coordenada en x
+;   y: coordenada en y
+(define (draw-node dc node x y)
+
+  (cond ( (equal? (quotient node 10) 1)
+          (send dc set-brush green-brush)
+         )
+        ( (equal? (quotient node 10) 2)
+          (send dc set-brush yellow-green-brush)
+         )
+        ( (equal? (quotient node 10) 3)
+          (send dc set-brush salmon-brush)
+         )
+        ( (equal? (quotient node 10) 4)
+          (send dc set-brush aquamarine-brush)
+         )
+        ( (equal? (quotient node 10) 5)
+          (send dc set-brush lightblue-brush)
+         )
+        ( (equal? (quotient node 10) 6)
+          (send dc set-brush chocolate-brush)
+         )
+        ( (equal? (quotient node 10) 7)
+          (send dc set-brush medium-turquoise-brush)
+         )
+        (else
+         (send dc set-brush black-brush)
+         )
+    )
+
+  ;Dibuja el nodo (circulo)
+  (send dc set-pen black-pen)
+  (send dc draw-ellipse x y 30 30)
+
+  ;Muestra el respectivo numero dentro del nodo
+  (send dc set-pen white-pen)
+  (send dc draw-text (number->string node) (+ x 5) (+ y 5) )
+ 
+)
+
+
+;----------------------------------------Graficar Nodos----------------------------------------;
+
+
+;---------------------------------------Graficar Lineas---------------------------------------;
+
+
+;Funcion para dibujar todas las lineas (inicio de aplicacion)
+(define (draw-all-lines)
+  (draw-all-lines-aux grafo)
+  )
+
+;Funcion auxiliar para dibujar todas las lineas (inicio de aplicacion)
+;Parametros:
+;   graph: graph
+(define (draw-all-lines-aux graph)
+  (cond ( (null? (cdr graph) )
+          (draw-lines-by-node dc (caar graph) (cadar graph))
+         )
+        (else         
+         (draw-lines-by-node dc (caar graph) (cadar graph))
+         (draw-all-lines-aux (cdr graph) ) ;Elimina el primer nodo del grafo
+         )
+    )
+  )
+
+
+;Funcion para dibujar lineas de un nodo especifico
+;Parametros:
+;   dc: Drawing Context
+;   node: nodo inicial
+;   connections: lista de nodos que finalizan la linea
+(define (draw-lines-by-node dc node connections)
+  (cond ( (null? (cdr connections) )
+          (draw-line dc node (caar connections) (check-ways (caar connections) node) )
+         )
+        (else
+         (draw-line dc node (caar connections) (check-ways (caar connections) node) )
+         (draw-lines-by-node dc node (cdr connections) )
+         )
+    )
+  )
+
+
+;Funcion para dibujar una linea
+;Parametros:
+;   ini: nodo inicial
+;   fin: nodo final
+;   way: cantidad de vias (1 o 2)
+(define (draw-line dc ini fin way)
+  (cond ( (equal? way 1)
+          ;Dibuja solo las flechas de los caminos de una sola via
+          (draw-arrows (+ 15 (get-coord ini "x")) (+ 15 (get-coord ini "y"))
+              (+ 15 (get-coord fin "x")) (+ 15 (get-coord fin "y")) )
+          ;Cambia al pen para una via
+          (send dc set-pen one-way-pen)
+         )
+        ( (equal? way 2)
+          ;Cambia al pen para dos vias
+          (send dc set-pen two-way-pen)
+         )
+    )
+  ;Manda a dibujar la linea
+  (send dc draw-line
+        (+ 15 (get-coord ini "x")) (+ 15 (get-coord ini "y"))
+        (+ 15 (get-coord fin "x")) (+ 15 (get-coord fin "y")) )
+        ; + 10 ya que el nodo tiene radio de 20 -> asi la linea queda en el medio
+  )
+
+
+;Funcion para verificar si el camino es one-way o two-way
+;Parametros:
+;   node: nodo por verificar
+;   fin: nodo por encontrar camino
+(define (check-ways node fin)
+  (check-ways-aux node fin grafo)
+  )
+
+;Funcion auxiliar para verificar si el camino es one-way o two-way
+;   node: nodo por verificar
+;   fin: nodo por encontrar camino
+;   graph: graph
+(define (check-ways-aux node fin graph)
+  (cond ( (null? graph)
+          1
+         )
+        ( (equal? node (caar graph))
+          (cond ( (path? fin (cadar graph) )
+                  2
+                 )
+                (else
+                 (check-ways-aux node fin (cdr graph) )
+                 )
+                )
+         )
+        (else
+         (check-ways-aux node fin (cdr graph) )
+         )
+  )
+  )
+
+;Funcion para verificar si existe un path a la inversa del ya encontrado
+;Parametros:
+;   fin: nodo final que pasa a ser inicial
+;   connections: lista de nodos que finalizarian la linea
+(define (path? fin connections)
+  (cond ( (null? connections)
+          #f
+         )
+        ( (equal? fin (caar connections) )
+          #t
+          )
+        (else
+         (path? fin (cdr connections) )
+         )
+    )
+ )
+
+
+;Funcion para dibujar una flecha cerca de la linea
+;Parametros:
+;   x1:
+;   y1:
+;   x2:
+;   y2:
+(define (draw-arrows x1 y1 x2 y2)
+  (send dc set-pen arrow-pen)
+  (send dc set-brush arrow-brush)
+
+  (cond
+        ;23->22
+        ( (equal? #t (and (equal? x1 (+ 265 15) ) (equal? x2 (+ 432 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 0 8)
+          )
+        ;41->42
+        ( (equal? #t (and (equal? x1 (+ 521 15) ) (equal? x2 (+ 540 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 9 2)
+          )
+        ;71->32
+        ( (equal? #t (and (equal? x1 (+ 678 15) ) (equal? x2 (+ 687 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 9 0)
+          )
+        ;72->62
+        ( (equal? #t (and (equal? x1 (+ 740 15) ) (equal? x2 (+ 736 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 9 0)
+          )
+        ;62->14
+        ( (equal? #t (and (equal? x1 (+ 736 15) ) (equal? x2 (+ 638 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 -5 6)
+          )
+        ;13->14
+        ( (equal? #t (and (equal? x1 (+ 510 15) ) (equal? x2 (+ 638 15)) ) )
+          (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 0 9)
+          )
+        #|( (equal? #t (and (equal? x1 ) (equal? y1  ) (equal? x2  ) (equal? y2 ) ) )
+
+          )|#
+        (else
+         (draw-arrow dc (/ (+ x1 (/ (+ x1 x2) 2)) 2)
+                 (/ (+ y1 (/ (+ y1 y2) 2)) 2)
+                 (/ (+ (/ (+ x1 x2) 2) x2) 2)
+                 (/ (+ (/ (+ y1 y2) 2) y2) 2)
+                 6 7)
+         )
+    )
+  )
+
+
+;---------------------------------------Graficar Lineas---------------------------------------;
+
+
+;----------------------------------------Graficar Pesos----------------------------------------;
+
+
+;Funcion para graficar el peso del camino entre dos nodos
+(define (draw-all-weights)
+  (draw-all-weights-aux pesoCaminos)
+  )
+
+;Funcion auxiliar para graficar el peso del camino entre dos nodos
+(define (draw-all-weights-aux peso-caminos)
+  (cond ( (null? peso-caminos)
+          #t
+         )
+        (else
+         ;Envia a dibujar el peso actual
+         (draw-weight
+          (+ 15 (get-coord (caar peso-caminos) "x"))
+          (+ 15 (get-coord (caar peso-caminos) "y"))
+          (+ 15 (get-coord (cadar peso-caminos) "x"))
+          (+ 15 (get-coord (cadar peso-caminos) "y"))
+          (caddar peso-caminos) )
+         ;Llama a la funcion nuevamente recursivamente para recorrer toda la lista
+         (draw-all-weights-aux (cdr peso-caminos) )
+         )
+    )
+  )
+
+
+;Funcion para mostrar el peso de la linea cerca de esta
+(define (draw-weight x1 y1 x2 y2 w)
+  
+  (cond
+    ;23->22
+    ( (equal? #t (and (equal? x1 (+ 265 15) ) (equal? x2 (+ 432 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) -7)
+                ( + (/ (+ y1 y2) 2) 10)
+                )
+         )
+    ;71->32
+    ( (equal? #t (and (equal? x1 (+ 678 15) ) (equal? x2 (+ 687 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 12)
+                ( + (/ (+ y1 y2) 2) -10)
+                )
+         )
+    ;32->72
+    ( (equal? #t (and (equal? x1 (+ 687 15) ) (equal? x2 (+ 740 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 8)
+                ( + (/ (+ y1 y2) 2) -12)
+                )
+         )
+    ;32->72 (Al ser doble)
+    ( (equal? #t (and (equal? x1 (+ 740 15) ) (equal? x2 (+ 687 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 8)
+                ( + (/ (+ y1 y2) 2) -12)
+                )
+         )
+    ;72->62
+    ( (equal? #t (and (equal? x1 (+ 740 15) ) (equal? x2 (+ 736 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 12)
+                ( + (/ (+ y1 y2) 2) -10)
+                )
+         )
+    ;62->14
+    ( (equal? #t (and (equal? x1 (+ 736 15) ) (equal? x2 (+ 638 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) -12)
+                ( + (/ (+ y1 y2) 2) 10)
+                )
+         )
+    ;13->14
+    ( (equal? #t (and (equal? x1 (+ 510 15) ) (equal? x2 (+ 638 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) -11)
+                ( + (/ (+ y1 y2) 2) 11)
+                )
+         )
+    ;31->13
+    ( (equal? #t (and (equal? x1 (+ 589 15) ) (equal? x2 (+ 510 15)) ) )
+            ;Dibuja el texto
+            (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 10)
+                ( + (/ (+ y1 y2) 2) 8)
+                )
+         )
+        ( (>= 70 (abs (- x1 x2))  )
+          ;Sumar solo en x
+          ;Dibuja el texto
+          (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 10)
+                ( + (/ (+ y1 y2) 2) 0)
+                )
+         )
+        ( (>= 70 (abs (- y1 y2))  )
+          ;Sumar solo en y
+          ;Dibuja el texto
+          (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 0)
+                ( + (/ (+ y1 y2) 2) 10)
+                )
+         )
+        (else
+         ;Suma en ambos
+         ;Dibuja el texto
+          (send dc draw-text (number->string w)
+                ( + (/ (+ x1 x2) 2) 6)
+                ( + (/ (+ y1 y2) 2) 6)
+                )
+         )
+    )
+
+  )
+
+
+;----------------------------------------Graficar Pesos----------------------------------------;
+
+
+;;Funciones post-inicio
+
+
+;Funcion para iniciar la busqueda de los caminos
+(define (begin-search)
+  (cond ( (equal? #t (check-fields)) ;Si los campos de texto estan correctos
+          ;Deshabilita el boton de busqueda y los radio-buttons
+          (send search-button enable #f)
+          (send rbuttons enable #f)
+          ;Se informa en el text-box sobre la busqueda
+          (search-info)
+          ;Se inicia la busqueda de los caminos dependiendo del estado de seleccion del usuario
+          (search-by-state)
+         )
+    )
+ )
+
+
+;Funcion para verificar los fields antes de buscar las rutas
+(define (check-fields)
+  (cond ( (equal? #f (check-destiny-field initial-destiny nodes-list) )
+        ;Si el destino inicial no esta en los nodos
+          (send instructions-text-field set-value
+              "El destino inicial seleccionado no existe.\nIngrese un nuevo destino." )
+          #f )
+        ( (equal? #f (check-destiny-field final-destiny nodes-list) )
+        ;Si el destino final no esta en los nodos
+          (send instructions-text-field set-value
+              "El destino final seleccionado no existe.\nIngrese un nuevo destino." )
+          #f )
+        (else
+         #t )
+  )
+)
+
+;Funcion para verificar las escogencias de los text-fields de los destinos
+;Parametros:
+;   text: string escrito en text-box
+;   list: nodes-list
+(define (check-destiny-field text list)
+  (cond ( (null? list)
+          #f )
+        ( (equal? text ( number->string (caar list)) )
+          #t )
+        (else
+         (check-destiny-field text (cdr list))
+         )
+    )
+  )
+
+
+;Funcion para cambiar el texto de instructions-text-field al presionar "Search"
+(define (search-info)
+  ;Se guarda en un string la seleccion de los radio buttons
+(cond ( (equal? 0 path-selection)
+        (set! search-state "Ruta más Corta" )
+       )
+      ( (equal? 1 path-selection)
+        (set! search-state "Todas las Rutas" )
+       )
+      )
+
+  ;Se cambia el texto del text-field
+  (send instructions-text-field set-value (string-append
+                                           "Tipo de Busqueda: " search-state
+                                           "\n\nDestino Inicial: " initial-destiny
+                                           "\nDestino Final: " final-destiny )
+        )
+  )
+
+
+;Funcion para empezar la busqueda de caminos dependiendo de la seleccion del usuario
+(define (search-by-state)
+  (cond ( (equal? 0 path-selection)
+          ;Camino mas corto
+          (shortest-path-search (string->number initial-destiny) (string->number final-destiny) )
+         )
+        ( (equal? 1 path-selection)
+          ;Todos los caminos
+          (all-paths-search (string->number initial-destiny) (string->number final-destiny) )
+         )
+        (else
+         (send instructions-text-field set-value "Tipo de Busqueda no seleccionado.")
+         )
+    )
+  )
+
+
+
+;Funcion para graficar el CAMINO MAS CORTO
+(define (shortest-path-search ini fin)
+  ;Se llama a la funcion BuscaCaminos en el archivo de logica
+  ;Se guarda la lista con el camino y el peso
+  (set! shortest-path (buscaCaminoCorto ini fin grafo) )
+  
+  ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
+  (draw-all-lines)
+  ;Llama a dibujar el camino mas corto
+  (draw-path shortest-path)
+  ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
+  (draw-all-nodes)
+  ;Se dibujan nuevamente los pesos
+  (draw-all-weights)
+
+  ;Ingresa la informacion del camino al text-field
+  (send information-text-field set-value (string-append "Información de Rutas:\n"
+                                                        "Ruta más corta:\nPeso:"
+                                                        (number->string (cadr shortest-path))
+                                                        ))
+ )
+
+
+
+;Funcion para graficar TODOS LOS CAMINOS
+(define (all-paths-search ini fin)
+  ;Se llama a la funcion BuscaCaminos en el archivo de logica
+  ;Se guarda la lista con los caminos y los pesos
+  (set! all-paths (buscaCaminos ini fin grafo) )
+
+  ;Ingresa las informaciones de los caminos al text-field
+  (set-path-info all-paths)
+
+  ;Crea los botones necesarios
+  (set-path-buttons (length all-paths) 1)
+  ;Se guarda una lista con los botones actuales
+  (set! actual-buttons (send vpanel-buttons get-children) )
+  
+  ; Wait a second to let the window get ready
+  (sleep/yield 0.1)
+
+  ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
+  (draw-all-lines)
+
+  ;Llama a dibujar el camino mas corto
+  (draw-path (car all-paths) )
+  
+  ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
+  (draw-all-nodes)
+  ;Se dibujan nuevamente los pesos
+  (draw-all-weights)
+  
+ )
+
+
+;Funcion para graficar un camino
+;Parametros:
+;   list: lista con el camino y el peso
+(define (draw-path list)
+  (draw-path-aux (car list))
+  )
+
+;Funcion auxilir para graficar un camino 
+;Parametros:
+;   path-list: lista solo con el camino
+(define (draw-path-aux path-list)
+  (cond ( (null? (cddr path-list) )
+          ;Grafica una linea entre los ultimos dos nodos
+          (build-path dc (car path-list) (cadr path-list) )
+         )
+        (else
+          ;Grafica una linea entre dos nodos
+          (build-path dc (car path-list) (cadr path-list) )
+          (draw-path-aux (cdr path-list) ) ;Elimina el primer nodo de la lista
+         )
+    )
+  )
+
+
+;Funcion para dibujar una linea
+;Parametros:
+;   ini: nodo inicial
+;   fin: nodo final
+;   way: cantidad de vias (1 o 2)
+(define (build-path dc ini fin)
+  ;Se escoje un pen rojo para trazar el camino
+  (send dc set-pen red-pen)
+  ;Manda a dibujar la linea
+  (send dc draw-line
+        (+ 15 (get-coord ini "x")) (+ 15 (get-coord ini "y"))
+        (+ 15 (get-coord fin "x")) (+ 15 (get-coord fin "y")) )
+        ; + 10 ya que el nodo tiene radio de 20 -> asi la linea queda en el medio
+
+  )
+
+
+;Funcion para ingresar la informacion de los caminos
+(define (set-path-info paths-list)
+  ;Redefine el information-text-field
+  (send information-text-field set-value (string-append "Información de Rutas:\n"
+                                                        (set-path-info-aux paths-list 1) ) )
+  
+  )
+
+;Funcion para ingresar la informacion de los caminos
+(define (set-path-info-aux paths-list n)
+  
+  (cond ( (null? paths-list )
+          (set! path-num n)
+          " "
+         )
+        (else
+
+         (cond ( (equal? (length paths-list) 1)
+                 (string-append "-> Ruta " (number->string n) ":\n     Peso: " (number->string (cadar paths-list)) 
+                        (set-path-info-aux (cdr paths-list) (+ 1 n) ) )
+                )
+               (else
+                (string-append "-> Ruta " (number->string n) ":\n     Peso: " (number->string (cadar paths-list)) "\n" 
+                        (set-path-info-aux (cdr paths-list) (+ 1 n) ) )
+                )
+           )
+ 
+         )
+        )
+  
+  )
+
+
+;Funcion para agregar los botones de las rutas
+(define (set-path-buttons total n)
+  (cond ( (equal? (+ total 1) n)
+          #t)
+        (else
+         
+         (cond ( (> 20 n)
+                 (set-path-buttons-aux total n vpanel-buttons)
+                 )
+               ;Si se sobrepasa de 21 botones
+               (else
+                (set-path-buttons-aux total n vpanel-buttons2)
+                )
+               )
+         
+         (set-path-buttons total (+ n 1))
+         
+         )
+        )
+  )
+
+
+;Funcion auxiliar para agregar los botones de las rutas
+(define (set-path-buttons-aux total n panel)
+  (cond ( (< (length actual-buttons) n )
+          ;Boton Ruta N
+          (new button% [parent vpanel-buttons] [label (string-append "Ruta " (number->string n) )]
+               
+               [callback (lambda (button event)
+                           ;Dibuja todas las lineas nuevamente por si hay algun camino en pantalla
+                           (draw-all-lines)
+                           
+                           (build-specific-path n all-paths)
+
+                           ;Se dibujan nuevamente los nodos para que camino queda debajo de estos
+                           (draw-all-nodes)
+                           ;Se dibujan nuevamente los pesos
+                           (draw-all-weights)
+                           
+                         )])
+         )
+        (else
+
+         (send (get-button n actual-buttons) show #t)
+
+         )
+        )
+  )
+
+
+;Funcion para obtener el boton necesario n
+(define (get-button n list)
+  (cond ( (equal? 1 n)
+          (car list)
+         )
+        (else
+         (get-button (- n 1) (cdr list))
+         )
+   )
+
+  )
+
+
+;Funcion para eliminar los botones luego de ser utilizados
+(define (delete-actual-buttons list)
+  (cond ( (null? list)
+          #t
+          )
+        (else
+         (send (car list) show #f)
+
+         (delete-actual-buttons (cdr list) )
+         
+         )
+    )
+  )
+
+;Funcion para graficar una ruta especifica
+;Usada en los botones dinamicos
+(define (build-specific-path n paths)
+  (cond ( (<= n (length paths))   
+          (cond ( (equal? n 1)
+                  (draw-path (car paths))
+                 )
+                (else
+                 (build-specific-path (- n 1) (cdr paths) )
+                 )
+            )
+          
+         )
+        (else
+         (send instructions-text-field set-value "Ruta inexistente")
+         )
+
+        )
+  )
+
+
+;Funcion que sera llamada al presionar "Nueva Busqueda"
+;"Reiniciara" la aplicacion
+(define (new-search)
+  ;;; Wait a second to let the window get ready
+                         ;;(sleep/yield 1)
+                         ;Initial draws
+                         (draw-all-lines)
+                         (draw-all-nodes)
+                         (draw-all-weights)
+  ;Redefinicion de instruction-text-field
+  (send instructions-text-field set-value "Bienvenidos a WazeTico!\n
+Favor ingrese un nuevo destino inicial y un nuevo destino final.\n")
+  ;Borra las selecciones de los destinos en text-fields
+  (send initial-text-field set-value "")
+  (send final-text-field set-value "")
+  ;Redefinicion de information-text-field
+  (send information-text-field set-value "Información de Rutas:" )
+  ;Elimina los botones de las rutas
+  (delete-actual-buttons actual-buttons)
+  ;Habilita el boton de busqueda y los radio-buttons
+  (send search-button enable #t)
+  (send rbuttons enable #t)
+  )
+
+
+;;Widgets
+
+
+;;;Pantalla Inicial
+
+
+;Frame inicial
+(define initial-frame (new frame% [label "WazeTico"]
+                   [width 400]
+                   [height 200]
+                   [alignment '(center center)]))
+
+
+;Panel vertical
+;Incluye title y hpanel-initial
+(define vpanel-initial (new vertical-panel% [parent initial-frame]
+                            [alignment '(center center)]))
+
+
+; Make a static text message in the frame
+(define title (new message% [parent vpanel-initial]
+                          [label "WazeTico"]))
+
+
+;Panel horizontal
+(define hpanel-initial (new horizontal-panel% [parent vpanel-initial]
+                            [alignment '(center center)]))
+
+
+;Boton Iniciar
+(define initial-initialize-buton (new button% [parent hpanel-initial]
+             [label "Iniciar"]
+             [vert-margin 10]	 
+             [horiz-margin 5]
+             [callback (lambda (button event)
+                         ;Cierra la ventana inicial
+                         (send initial-frame show #f)
+                         ;Abre la ventana principal
+                         (send main-frame show #t)
+                         ; Wait a second to let the window get ready
+                         (sleep/yield 1)
+                         ;Initial draws
+                         (draw-all-lines)
+                         (draw-all-nodes)
+                         (draw-all-weights)
+                         )]))
+
+
+;;;Pantalla Principal
+
+
+; Frame principal
+(define main-frame (new frame% [label "WazeTico"]
+                   [width 1050]
+                   [height 660]
+                   [alignment '(left top)]))
+
+
+;Panel principal (horizontal)
+(define main-panel (new horizontal-panel% [parent main-frame] ))
+ 
+
+;Panel vertical
+;Incluye cavas(mapa) y panel horizontal secundario
+(define vpanel (new vertical-panel% [parent main-panel]))
+
+
+;Canvas donde se muestra el grafo
+(define map-canvas (new canvas% [parent vpanel]
+                       [style '(border)]
+                       [label "MAP"] 
+                       [vert-margin 10]	 
+                       [horiz-margin 10]
+                       [min-height 500]))
+
+
+;Drawing Context de map-canvas
+(define dc (send map-canvas get-dc))
+
+
+;Panel horizontal secundario
+;Incluye text-field (instrucciones) y vpanel2 (botones)
+(define hpanel2 (new horizontal-panel% [parent vpanel]
+                     [alignment '(center center)]))
+
+
+;Text-field de instrucciones
+(define instructions-text-field ( new text-field% [parent hpanel2]
+                                    [label #f]
+                                    [init-value
+                                     "¡Bienvenido a WazeTico!\n
+-> Favor ingrese el destino inicial y el destino final.
+-> Seleccione el tipo de rutas que desea observar.
+-> Presione \"Buscar\" para iniciar."]
+                                    [vert-margin 10]	 
+                                    [horiz-margin 10]
+                                    [min-width 600]
+                                    [min-height 120]))
+
+;Panel horizontal terciario
+;
+(define hpanel3 (new horizontal-panel% [parent hpanel2]
+                     [alignment '(center center)]
+                     ))
+
+
+;Panel vertical secundario
+;
+(define vpanel2 (new vertical-panel% [parent hpanel2]
+                     [alignment '(center center)]))
+
+
+;Text-field de instrucciones
+(define initial-text-field ( new text-field% [parent vpanel2]
+                                    [label #f]
+                                    [min-width 10]
+                                    ))
+
+
+(define intial-label (new message% [parent vpanel2]
+                          [label "Destino Inicial"]))
+
+;Text-field de instrucciones
+(define final-text-field ( new text-field% [parent vpanel2]
+                                    [label #f]
+                                    [min-width 10]
+                                    ))
+
+(define final-label (new message% [parent vpanel2]
+                          [label "Destino Final"]))
+
+
+;Panel vertical terciario
+;
+(define vpanel3 (new vertical-panel% [parent hpanel2]
+                     [alignment '(center center)]
+                     ))
+
+
+;Radio Button Selection
+(define rbuttons (new radio-box% [label ""]
+     [choices '("Ruta más Corta" "Todas las Rutas")]
+     [parent vpanel3]
+))
+     
+
+;Boton Search
+(define search-button (new button% [parent vpanel3]
+             [label "Buscar"]
+             [callback (lambda (button event)
+                         ;Ingresa el texto de los fields a sus respectivas variables
+                         (set! initial-destiny (send initial-text-field get-value))
+                         (set! final-destiny (send  final-text-field get-value))
+                         (set! path-selection (send rbuttons get-selection) )
+                         ;Comienza el proceso de busqueda
+                         (begin-search)
+                         
+                         )]))
+
+
+;Boton New Path
+(define new-search-button (new button% [parent vpanel3]
+             [label "Cambiar Destinos"]
+             [vert-margin 10]	 
+             [horiz-margin 5]
+             [callback (lambda (button event)
+                         (new-search)
+                         )]))
+
+
+;Text-field de informacion
+(define information-text-field ( new text-field% [parent main-panel]
+                                    [label #f]
+                                    [init-value "Información de Rutas:"]
+                                    [vert-margin 10]	 
+                                    [horiz-margin 10]
+                                    [min-width 160]
+                                    [min-height 640]))
+
+
+;Panel vertical de botones principal
+;
+(define vpanel-buttons (new vertical-panel% [parent main-panel]
+                            [horiz-margin 8]
+                     [alignment '(center center)]
+                     ))
+
+;Panel vertical de botones secundario
+;
+(define vpanel-buttons2 (new vertical-panel% [parent main-panel]
+                             	;[enabled #f]
+                             [horiz-margin 3]
+                     [alignment '(center center)]
+                     ))
+
+
+;;Inicio de Aplicacion
+
+
+; Se muestra el frame inicial
+(send initial-frame show #t)
+
